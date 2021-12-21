@@ -1,8 +1,11 @@
-import { ServerType, TopologyType } from './common.ts';
-import { ReadPreference } from '../read_preference.ts';
-import { MongoCompatibilityError, MongoInvalidArgumentError } from '../error.ts';
-import type { TopologyDescription } from './topology_description.ts';
-import type { ServerDescription, TagSet } from './server_description.ts';
+import { ServerType, TopologyType } from "./common.ts";
+import { ReadPreference } from "../read_preference.ts";
+import {
+  MongoCompatibilityError,
+  MongoInvalidArgumentError,
+} from "../error.ts";
+import type { TopologyDescription } from "./topology_description.ts";
+import type { ServerDescription, TagSet } from "./server_description.ts";
 
 // max staleness constants
 const IDLE_WRITE_PERIOD = 10000;
@@ -11,7 +14,7 @@ const SMALLEST_MAX_STALENESS_SECONDS = 90;
 /** @public */
 export type ServerSelector = (
   topologyDescription: TopologyDescription,
-  servers: ServerDescription[]
+  servers: ServerDescription[],
 ) => ServerDescription[];
 
 /**
@@ -20,11 +23,11 @@ export type ServerSelector = (
 export function writableServerSelector(): ServerSelector {
   return (
     topologyDescription: TopologyDescription,
-    servers: ServerDescription[]
+    servers: ServerDescription[],
   ): ServerDescription[] =>
     latencyWindowReducer(
       topologyDescription,
-      servers.filter((s: ServerDescription) => s.isWritable)
+      servers.filter((s: ServerDescription) => s.isWritable),
     );
 }
 
@@ -40,9 +43,12 @@ export function writableServerSelector(): ServerSelector {
 function maxStalenessReducer(
   readPreference: ReadPreference,
   topologyDescription: TopologyDescription,
-  servers: ServerDescription[]
+  servers: ServerDescription[],
 ): ServerDescription[] {
-  if (readPreference.maxStalenessSeconds == null || readPreference.maxStalenessSeconds < 0) {
+  if (
+    readPreference.maxStalenessSeconds == null ||
+    readPreference.maxStalenessSeconds < 0
+  ) {
     return servers;
   }
 
@@ -51,36 +57,39 @@ function maxStalenessReducer(
     (topologyDescription.heartbeatFrequencyMS + IDLE_WRITE_PERIOD) / 1000;
   if (maxStaleness < maxStalenessVariance) {
     throw new MongoInvalidArgumentError(
-      `Option "maxStalenessSeconds" must be at least ${maxStalenessVariance} seconds`
+      `Option "maxStalenessSeconds" must be at least ${maxStalenessVariance} seconds`,
     );
   }
 
   if (maxStaleness < SMALLEST_MAX_STALENESS_SECONDS) {
     throw new MongoInvalidArgumentError(
-      `Option "maxStalenessSeconds" must be at least ${SMALLEST_MAX_STALENESS_SECONDS} seconds`
+      `Option "maxStalenessSeconds" must be at least ${SMALLEST_MAX_STALENESS_SECONDS} seconds`,
     );
   }
 
   if (topologyDescription.type === TopologyType.ReplicaSetWithPrimary) {
-    const primary: ServerDescription = Array.from(topologyDescription.servers.values()).filter(
-      primaryFilter
-    )[0];
+    const primary: ServerDescription =
+      Array.from(topologyDescription.servers.values()).filter(
+        primaryFilter,
+      )[0];
 
-    return servers.reduce((result: ServerDescription[], server: ServerDescription) => {
-      const stalenessMS =
-        server.lastUpdateTime -
-        server.lastWriteDate -
-        (primary.lastUpdateTime - primary.lastWriteDate) +
-        topologyDescription.heartbeatFrequencyMS;
+    return servers.reduce(
+      (result: ServerDescription[], server: ServerDescription) => {
+        const stalenessMS = server.lastUpdateTime -
+          server.lastWriteDate -
+          (primary.lastUpdateTime - primary.lastWriteDate) +
+          topologyDescription.heartbeatFrequencyMS;
 
-      const staleness = stalenessMS / 1000;
-      const maxStalenessSeconds = readPreference.maxStalenessSeconds ?? 0;
-      if (staleness <= maxStalenessSeconds) {
-        result.push(server);
-      }
+        const staleness = stalenessMS / 1000;
+        const maxStalenessSeconds = readPreference.maxStalenessSeconds ?? 0;
+        if (staleness <= maxStalenessSeconds) {
+          result.push(server);
+        }
 
-      return result;
-    }, []);
+        return result;
+      },
+      [],
+    );
   }
 
   if (topologyDescription.type === TopologyType.ReplicaSetNoPrimary) {
@@ -88,22 +97,26 @@ function maxStalenessReducer(
       return servers;
     }
 
-    const sMax = servers.reduce((max: ServerDescription, s: ServerDescription) =>
-      s.lastWriteDate > max.lastWriteDate ? s : max
+    const sMax = servers.reduce((
+      max: ServerDescription,
+      s: ServerDescription,
+    ) => s.lastWriteDate > max.lastWriteDate ? s : max);
+
+    return servers.reduce(
+      (result: ServerDescription[], server: ServerDescription) => {
+        const stalenessMS = sMax.lastWriteDate - server.lastWriteDate +
+          topologyDescription.heartbeatFrequencyMS;
+
+        const staleness = stalenessMS / 1000;
+        const maxStalenessSeconds = readPreference.maxStalenessSeconds ?? 0;
+        if (staleness <= maxStalenessSeconds) {
+          result.push(server);
+        }
+
+        return result;
+      },
+      [],
     );
-
-    return servers.reduce((result: ServerDescription[], server: ServerDescription) => {
-      const stalenessMS =
-        sMax.lastWriteDate - server.lastWriteDate + topologyDescription.heartbeatFrequencyMS;
-
-      const staleness = stalenessMS / 1000;
-      const maxStalenessSeconds = readPreference.maxStalenessSeconds ?? 0;
-      if (staleness <= maxStalenessSeconds) {
-        result.push(server);
-      }
-
-      return result;
-    }, []);
   }
 
   return servers;
@@ -137,7 +150,7 @@ function tagSetMatch(tagSet: TagSet, serverTags: TagSet) {
  */
 function tagSetReducer(
   readPreference: ReadPreference,
-  servers: ServerDescription[]
+  servers: ServerDescription[],
 ): ServerDescription[] {
   if (
     readPreference.tags == null ||
@@ -153,7 +166,7 @@ function tagSetReducer(
         if (tagSetMatch(tagSet, server.tags)) matched.push(server);
         return matched;
       },
-      []
+      [],
     );
 
     if (serversMatchingTagset.length) {
@@ -175,19 +188,24 @@ function tagSetReducer(
  */
 function latencyWindowReducer(
   topologyDescription: TopologyDescription,
-  servers: ServerDescription[]
+  servers: ServerDescription[],
 ): ServerDescription[] {
   const low = servers.reduce(
     (min: number, server: ServerDescription) =>
       min === -1 ? server.roundTripTime : Math.min(server.roundTripTime, min),
-    -1
+    -1,
   );
 
   const high = low + topologyDescription.localThresholdMS;
-  return servers.reduce((result: ServerDescription[], server: ServerDescription) => {
-    if (server.roundTripTime <= high && server.roundTripTime >= low) result.push(server);
-    return result;
-  }, []);
+  return servers.reduce(
+    (result: ServerDescription[], server: ServerDescription) => {
+      if (server.roundTripTime <= high && server.roundTripTime >= low) {
+        result.push(server);
+      }
+      return result;
+    },
+    [],
+  );
 }
 
 // filters
@@ -200,7 +218,8 @@ function secondaryFilter(server: ServerDescription): boolean {
 }
 
 function nearestFilter(server: ServerDescription): boolean {
-  return server.type === ServerType.RSSecondary || server.type === ServerType.RSPrimary;
+  return server.type === ServerType.RSSecondary ||
+    server.type === ServerType.RSPrimary;
 }
 
 function knownFilter(server: ServerDescription): boolean {
@@ -216,14 +235,16 @@ function loadBalancerFilter(server: ServerDescription): boolean {
  *
  * @param readPreference - The read preference to select with
  */
-export function readPreferenceServerSelector(readPreference: ReadPreference): ServerSelector {
+export function readPreferenceServerSelector(
+  readPreference: ReadPreference,
+): ServerSelector {
   if (!readPreference.isValid()) {
-    throw new MongoInvalidArgumentError('Invalid read preference specified');
+    throw new MongoInvalidArgumentError("Invalid read preference specified");
   }
 
   return (
     topologyDescription: TopologyDescription,
-    servers: ServerDescription[]
+    servers: ServerDescription[],
   ): ServerDescription[] => {
     const commonWireVersion = topologyDescription.commonWireVersion;
     if (
@@ -232,7 +253,7 @@ export function readPreferenceServerSelector(readPreference: ReadPreference): Se
       readPreference.minWireVersion > commonWireVersion
     ) {
       throw new MongoCompatibilityError(
-        `Minimum wire version '${readPreference.minWireVersion}' required, but found '${commonWireVersion}'`
+        `Minimum wire version '${readPreference.minWireVersion}' required, but found '${commonWireVersion}'`,
       );
     }
 
@@ -248,7 +269,10 @@ export function readPreferenceServerSelector(readPreference: ReadPreference): Se
       topologyDescription.type === TopologyType.Single ||
       topologyDescription.type === TopologyType.Sharded
     ) {
-      return latencyWindowReducer(topologyDescription, servers.filter(knownFilter));
+      return latencyWindowReducer(
+        topologyDescription,
+        servers.filter(knownFilter),
+      );
     }
 
     const mode = readPreference.mode;
@@ -263,16 +287,25 @@ export function readPreferenceServerSelector(readPreference: ReadPreference): Se
       }
     }
 
-    const filter = mode === ReadPreference.NEAREST ? nearestFilter : secondaryFilter;
+    const filter = mode === ReadPreference.NEAREST
+      ? nearestFilter
+      : secondaryFilter;
     const selectedServers = latencyWindowReducer(
       topologyDescription,
       tagSetReducer(
         readPreference,
-        maxStalenessReducer(readPreference, topologyDescription, servers.filter(filter))
-      )
+        maxStalenessReducer(
+          readPreference,
+          topologyDescription,
+          servers.filter(filter),
+        ),
+      ),
     );
 
-    if (mode === ReadPreference.SECONDARY_PREFERRED && selectedServers.length === 0) {
+    if (
+      mode === ReadPreference.SECONDARY_PREFERRED &&
+      selectedServers.length === 0
+    ) {
       return servers.filter(primaryFilter);
     }
 

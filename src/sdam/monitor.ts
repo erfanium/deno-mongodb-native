@@ -4,7 +4,6 @@ import {
   EventEmitterWithState,
   makeInterruptibleAsyncInterval,
   makeStateMachine,
-  now,
   ns,
 } from "../utils.ts";
 import { connect } from "../cmap/connect.ts";
@@ -215,7 +214,7 @@ function resetMonitorState(monitor: Monitor) {
 }
 
 function checkServer(monitor: Monitor, callback: Callback<Document>) {
-  let start = now();
+  let start = performance.now();
   monitor.emit(
     Server.SERVER_HEARTBEAT_STARTED,
     new ServerHeartbeatStartedEvent(monitor.address),
@@ -303,7 +302,7 @@ function checkServer(monitor: Monitor, callback: Callback<Document>) {
           Server.SERVER_HEARTBEAT_STARTED,
           new ServerHeartbeatStartedEvent(monitor.address),
         );
-        start = now();
+        start = performance.now();
       } else {
         monitor[kRTTPinger]?.close();
         monitor[kRTTPinger] = undefined;
@@ -436,7 +435,7 @@ export class RTTPinger {
 }
 
 function measureRoundTripTime(rttPinger: RTTPinger, options: RTTPingerOptions) {
-  const start = now();
+  const start = performance.now();
   options.cancellationToken = rttPinger[kCancellationToken];
   const heartbeatFrequencyMS = options.heartbeatFrequencyMS;
 

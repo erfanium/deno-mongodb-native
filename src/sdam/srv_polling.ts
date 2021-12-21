@@ -1,4 +1,3 @@
-import * as dns from "dns";
 import { Logger, LoggerOptions } from "../logger.ts";
 import { HostAddress } from "../utils.ts";
 import { TypedEventEmitter } from "../mongo_types.ts";

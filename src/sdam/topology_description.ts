@@ -1,22 +1,31 @@
-import { ServerDescription } from './server_description.ts';
-import * as WIRE_CONSTANTS from '../cmap/wire_protocol/constants.ts';
-import { TopologyType, ServerType } from './common.ts';
-import type { ObjectId, Document } from '../bson.ts';
-import type { SrvPollingEvent } from './srv_polling.ts';
-import { MongoError, MongoRuntimeError } from '../error.ts';
+import { ServerDescription } from "./server_description.ts";
+import * as WIRE_CONSTANTS from "../cmap/wire_protocol/constants.ts";
+import { ServerType, TopologyType } from "./common.ts";
+import type { Document, ObjectId } from "../bson.ts";
+import type { SrvPollingEvent } from "./srv_polling.ts";
+import { MongoError, MongoRuntimeError } from "../error.ts";
+import { Buffer } from "https://deno.land/std@0.118.0/node/buffer.ts";
 
 // constants related to compatibility checks
-const MIN_SUPPORTED_SERVER_VERSION = WIRE_CONSTANTS.MIN_SUPPORTED_SERVER_VERSION;
-const MAX_SUPPORTED_SERVER_VERSION = WIRE_CONSTANTS.MAX_SUPPORTED_SERVER_VERSION;
+const MIN_SUPPORTED_SERVER_VERSION =
+  WIRE_CONSTANTS.MIN_SUPPORTED_SERVER_VERSION;
+const MAX_SUPPORTED_SERVER_VERSION =
+  WIRE_CONSTANTS.MAX_SUPPORTED_SERVER_VERSION;
 const MIN_SUPPORTED_WIRE_VERSION = WIRE_CONSTANTS.MIN_SUPPORTED_WIRE_VERSION;
 const MAX_SUPPORTED_WIRE_VERSION = WIRE_CONSTANTS.MAX_SUPPORTED_WIRE_VERSION;
 
-const MONGOS_OR_UNKNOWN = new Set<ServerType>([ServerType.Mongos, ServerType.Unknown]);
-const MONGOS_OR_STANDALONE = new Set<ServerType>([ServerType.Mongos, ServerType.Standalone]);
+const MONGOS_OR_UNKNOWN = new Set<ServerType>([
+  ServerType.Mongos,
+  ServerType.Unknown,
+]);
+const MONGOS_OR_STANDALONE = new Set<ServerType>([
+  ServerType.Mongos,
+  ServerType.Standalone,
+]);
 const NON_PRIMARY_RS_MEMBERS = new Set<ServerType>([
   ServerType.RSSecondary,
   ServerType.RSArbiter,
-  ServerType.RSOther
+  ServerType.RSOther,
 ]);
 
 /** @public */
@@ -53,7 +62,7 @@ export class TopologyDescription {
     maxSetVersion?: number,
     maxElectionId?: ObjectId,
     commonWireVersion?: number,
-    options?: TopologyDescriptionOptions
+    options?: TopologyDescriptionOptions,
   ) {
     options = options ?? {};
 
@@ -95,12 +104,14 @@ export class TopologyDescription {
 
       if (serverDescription.minWireVersion > MAX_SUPPORTED_WIRE_VERSION) {
         this.compatible = false;
-        this.compatibilityError = `Server at ${serverDescription.address} requires wire version ${serverDescription.minWireVersion}, but this version of the driver only supports up to ${MAX_SUPPORTED_WIRE_VERSION} (MongoDB ${MAX_SUPPORTED_SERVER_VERSION})`;
+        this.compatibilityError =
+          `Server at ${serverDescription.address} requires wire version ${serverDescription.minWireVersion}, but this version of the driver only supports up to ${MAX_SUPPORTED_WIRE_VERSION} (MongoDB ${MAX_SUPPORTED_SERVER_VERSION})`;
       }
 
       if (serverDescription.maxWireVersion < MIN_SUPPORTED_WIRE_VERSION) {
         this.compatible = false;
-        this.compatibilityError = `Server at ${serverDescription.address} reports wire version ${serverDescription.maxWireVersion}, but this version of the driver requires at least ${MIN_SUPPORTED_WIRE_VERSION} (MongoDB ${MIN_SUPPORTED_SERVER_VERSION}).`;
+        this.compatibilityError =
+          `Server at ${serverDescription.address} reports wire version ${serverDescription.maxWireVersion}, but this version of the driver requires at least ${MIN_SUPPORTED_WIRE_VERSION} (MongoDB ${MIN_SUPPORTED_SERVER_VERSION}).`;
         break;
       }
     }
@@ -121,7 +132,8 @@ export class TopologyDescription {
 
         if (this.logicalSessionTimeoutMinutes == null) {
           // First server with a non null logicalSessionsTimeout
-          this.logicalSessionTimeoutMinutes = server.logicalSessionTimeoutMinutes;
+          this.logicalSessionTimeoutMinutes =
+            server.logicalSessionTimeoutMinutes;
           continue;
         }
 
@@ -129,7 +141,7 @@ export class TopologyDescription {
         // current server logicalSessionsTimeout and the topologies logicalSessionsTimeout
         this.logicalSessionTimeoutMinutes = Math.min(
           this.logicalSessionTimeoutMinutes,
-          server.logicalSessionTimeoutMinutes
+          server.logicalSessionTimeoutMinutes,
         );
       }
     }
@@ -150,7 +162,9 @@ export class TopologyDescription {
       }
     }
 
-    if (serverDescriptions.size === this.servers.size && newAddresses.size === 0) {
+    if (
+      serverDescriptions.size === this.servers.size && newAddresses.size === 0
+    ) {
       return this;
     }
 
@@ -165,7 +179,10 @@ export class TopologyDescription {
       this.maxSetVersion,
       this.maxElectionId,
       this.commonWireVersion,
-      { heartbeatFrequencyMS: this.heartbeatFrequencyMS, localThresholdMS: this.localThresholdMS }
+      {
+        heartbeatFrequencyMS: this.heartbeatFrequencyMS,
+        localThresholdMS: this.localThresholdMS,
+      },
     );
   }
 
@@ -177,9 +194,18 @@ export class TopologyDescription {
     const address = serverDescription.address;
 
     // potentially mutated values
-    let { type: topologyType, setName, maxSetVersion, maxElectionId, commonWireVersion } = this;
+    let {
+      type: topologyType,
+      setName,
+      maxSetVersion,
+      maxElectionId,
+      commonWireVersion,
+    } = this;
 
-    if (serverDescription.setName && setName && serverDescription.setName !== setName) {
+    if (
+      serverDescription.setName && setName &&
+      serverDescription.setName !== setName
+    ) {
       serverDescription = new ServerDescription(address, undefined);
     }
 
@@ -191,7 +217,10 @@ export class TopologyDescription {
       if (commonWireVersion == null) {
         commonWireVersion = serverDescription.maxWireVersion;
       } else {
-        commonWireVersion = Math.min(commonWireVersion, serverDescription.maxWireVersion);
+        commonWireVersion = Math.min(
+          commonWireVersion,
+          serverDescription.maxWireVersion,
+        );
       }
     }
 
@@ -207,7 +236,10 @@ export class TopologyDescription {
         maxSetVersion,
         maxElectionId,
         commonWireVersion,
-        { heartbeatFrequencyMS: this.heartbeatFrequencyMS, localThresholdMS: this.localThresholdMS }
+        {
+          heartbeatFrequencyMS: this.heartbeatFrequencyMS,
+          localThresholdMS: this.localThresholdMS,
+        },
       );
     }
 
@@ -236,7 +268,7 @@ export class TopologyDescription {
           serverDescription,
           setName,
           maxSetVersion,
-          maxElectionId
+          maxElectionId,
         );
 
         topologyType = result[0];
@@ -244,7 +276,11 @@ export class TopologyDescription {
         maxSetVersion = result[2];
         maxElectionId = result[3];
       } else if (NON_PRIMARY_RS_MEMBERS.has(serverType)) {
-        const result = updateRsNoPrimaryFromMember(serverDescriptions, serverDescription, setName);
+        const result = updateRsNoPrimaryFromMember(
+          serverDescriptions,
+          serverDescription,
+          setName,
+        );
         topologyType = result[0];
         setName = result[1];
       }
@@ -260,7 +296,7 @@ export class TopologyDescription {
           serverDescription,
           setName,
           maxSetVersion,
-          maxElectionId
+          maxElectionId,
         );
 
         topologyType = result[0];
@@ -271,7 +307,7 @@ export class TopologyDescription {
         topologyType = updateRsWithPrimaryFromMember(
           serverDescriptions,
           serverDescription,
-          setName
+          setName,
         );
       } else {
         topologyType = checkHasPrimary(serverDescriptions);
@@ -285,13 +321,16 @@ export class TopologyDescription {
       maxSetVersion,
       maxElectionId,
       commonWireVersion,
-      { heartbeatFrequencyMS: this.heartbeatFrequencyMS, localThresholdMS: this.localThresholdMS }
+      {
+        heartbeatFrequencyMS: this.heartbeatFrequencyMS,
+        localThresholdMS: this.localThresholdMS,
+      },
     );
   }
 
   get error(): MongoError | undefined {
     const descriptionsWithError = Array.from(this.servers.values()).filter(
-      (sd: ServerDescription) => sd.error
+      (sd: ServerDescription) => sd.error,
     );
 
     if (descriptionsWithError.length > 0) {
@@ -304,7 +343,7 @@ export class TopologyDescription {
    */
   get hasKnownServers(): boolean {
     return Array.from(this.servers.values()).some(
-      (sd: ServerDescription) => sd.type !== ServerType.Unknown
+      (sd: ServerDescription) => sd.type !== ServerType.Unknown,
     );
   }
 
@@ -312,7 +351,9 @@ export class TopologyDescription {
    * Determines if this topology description has a data-bearing server available.
    */
   get hasDataBearingServers(): boolean {
-    return Array.from(this.servers.values()).some((sd: ServerDescription) => sd.isDataBearing);
+    return Array.from(this.servers.values()).some((sd: ServerDescription) =>
+      sd.isDataBearing
+    );
   }
 
   /**
@@ -366,15 +407,22 @@ function updateRsFromPrimary(
   serverDescription: ServerDescription,
   setName?: string,
   maxSetVersion?: number,
-  maxElectionId?: ObjectId
+  maxElectionId?: ObjectId,
 ): [TopologyType, string?, number?, ObjectId?] {
   setName = setName || serverDescription.setName;
   if (setName !== serverDescription.setName) {
     serverDescriptions.delete(serverDescription.address);
-    return [checkHasPrimary(serverDescriptions), setName, maxSetVersion, maxElectionId];
+    return [
+      checkHasPrimary(serverDescriptions),
+      setName,
+      maxSetVersion,
+      maxElectionId,
+    ];
   }
 
-  const electionId = serverDescription.electionId ? serverDescription.electionId : null;
+  const electionId = serverDescription.electionId
+    ? serverDescription.electionId
+    : null;
   if (serverDescription.setVersion && electionId) {
     if (maxSetVersion && maxElectionId) {
       if (
@@ -384,10 +432,15 @@ function updateRsFromPrimary(
         // this primary is stale, we must remove it
         serverDescriptions.set(
           serverDescription.address,
-          new ServerDescription(serverDescription.address)
+          new ServerDescription(serverDescription.address),
         );
 
-        return [checkHasPrimary(serverDescriptions), setName, maxSetVersion, maxElectionId];
+        return [
+          checkHasPrimary(serverDescriptions),
+          setName,
+          maxSetVersion,
+          maxElectionId,
+        ];
       }
     }
 
@@ -403,7 +456,10 @@ function updateRsFromPrimary(
 
   // We've heard from the primary. Is it the same primary as before?
   for (const [address, server] of serverDescriptions) {
-    if (server.type === ServerType.RSPrimary && server.address !== serverDescription.address) {
+    if (
+      server.type === ServerType.RSPrimary &&
+      server.address !== serverDescription.address
+    ) {
       // Reset old primary's type to Unknown.
       serverDescriptions.set(address, new ServerDescription(server.address));
 
@@ -428,17 +484,24 @@ function updateRsFromPrimary(
       serverDescriptions.delete(address);
     });
 
-  return [checkHasPrimary(serverDescriptions), setName, maxSetVersion, maxElectionId];
+  return [
+    checkHasPrimary(serverDescriptions),
+    setName,
+    maxSetVersion,
+    maxElectionId,
+  ];
 }
 
 function updateRsWithPrimaryFromMember(
   serverDescriptions: Map<string, ServerDescription>,
   serverDescription: ServerDescription,
-  setName?: string
+  setName?: string,
 ): TopologyType {
   if (setName == null) {
     // TODO(NODE-3483): should be an appropriate runtime error
-    throw new MongoRuntimeError('Argument "setName" is required if connected to a replica set');
+    throw new MongoRuntimeError(
+      'Argument "setName" is required if connected to a replica set',
+    );
   }
 
   if (
@@ -454,7 +517,7 @@ function updateRsWithPrimaryFromMember(
 function updateRsNoPrimaryFromMember(
   serverDescriptions: Map<string, ServerDescription>,
   serverDescription: ServerDescription,
-  setName?: string
+  setName?: string,
 ): [TopologyType, string?] {
   const topologyType = TopologyType.ReplicaSetNoPrimary;
   setName = setName || serverDescription.setName;
@@ -469,14 +532,18 @@ function updateRsNoPrimaryFromMember(
     }
   });
 
-  if (serverDescription.me && serverDescription.address !== serverDescription.me) {
+  if (
+    serverDescription.me && serverDescription.address !== serverDescription.me
+  ) {
     serverDescriptions.delete(serverDescription.address);
   }
 
   return [topologyType, setName];
 }
 
-function checkHasPrimary(serverDescriptions: Map<string, ServerDescription>): TopologyType {
+function checkHasPrimary(
+  serverDescriptions: Map<string, ServerDescription>,
+): TopologyType {
   for (const serverDescription of serverDescriptions.values()) {
     if (serverDescription.type === ServerType.RSPrimary) {
       return TopologyType.ReplicaSetWithPrimary;

@@ -1,4 +1,3 @@
-import Denque = require("denque");
 import { ReadPreference, ReadPreferenceLike } from "../read_preference.ts";
 import {
   compareTopologyVersion,
@@ -69,6 +68,8 @@ import type { MongoOptions, ServerApi } from "../mongo_client.ts";
 import { DEFAULT_OPTIONS } from "../connection_string.ts";
 import { deserialize, serialize } from "../bson.ts";
 import { TypedEventEmitter } from "../mongo_types.ts";
+// @deno-types="https://deno.land/x/denque@v2.0.1/index.d.ts"
+import Denque from "https://deno.land/x/denque@v2.0.1/index.js";
 
 // Global state
 let globalTopologyCounter = 0;
@@ -486,8 +487,9 @@ export class Topology extends TypedEventEmitter<TopologyEvents> {
         if (err) {
           this.close();
 
-          typeof callback === "function" ? callback(err)
-          : this.emit(Topology.ERROR, err);
+          typeof callback === "function"
+            ? callback(err)
+            : this.emit(Topology.ERROR, err);
           return;
         }
 

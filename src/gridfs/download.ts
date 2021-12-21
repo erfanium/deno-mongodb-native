@@ -1,19 +1,20 @@
-import { Readable } from 'stream';
+import { Readable } from "https://deno.land/std@0.118.0/node/stream.ts";
 import {
-  MongoRuntimeError,
   MongoGridFSChunkError,
   MongoGridFSStreamError,
-  MongoInvalidArgumentError
-} from '../error.ts';
-import type { Document } from '../bson.ts';
-import type { FindOptions } from '../operations/find.ts';
-import type { Sort } from '../sort.ts';
-import type { Callback } from '../utils.ts';
-import type { Collection } from '../collection.ts';
-import type { ReadPreference } from '../read_preference.ts';
-import type { GridFSChunk } from './upload.ts';
-import type { FindCursor } from '../cursor/find_cursor.ts';
-import type { ObjectId } from 'bson';
+  MongoInvalidArgumentError,
+  MongoRuntimeError,
+} from "../error.ts";
+import type { Document } from "../bson.ts";
+import type { FindOptions } from "../operations/find.ts";
+import type { Sort } from "../sort.ts";
+import type { Callback } from "../utils.ts";
+import type { Collection } from "../collection.ts";
+import type { ReadPreference } from "../read_preference.ts";
+import type { GridFSChunk } from "./upload.ts";
+import type { FindCursor } from "../cursor/find_cursor.ts";
+import type { ObjectId } from "bson";
+import { Buffer } from "https://deno.land/std@0.118.0/node/buffer.ts";
 
 /** @public */
 export interface GridFSBucketReadStreamOptions {
@@ -26,7 +27,8 @@ export interface GridFSBucketReadStreamOptions {
 }
 
 /** @public */
-export interface GridFSBucketReadStreamOptionsWithRevision extends GridFSBucketReadStreamOptions {
+export interface GridFSBucketReadStreamOptionsWithRevision
+  extends GridFSBucketReadStreamOptions {
   /** The revision number relative to the oldest file with the given filename. 0
    * gets you the oldest file, 1 gets you the 2nd oldest, -1 gets you the
    * newest. */
@@ -73,7 +75,8 @@ export interface GridFSBucketReadStreamPrivate {
  * Do not instantiate this class directly. Use `openDownloadStream()` instead.
  * @public
  */
-export class GridFSBucketReadStream extends Readable implements NodeJS.ReadableStream {
+export class GridFSBucketReadStream extends Readable
+  implements NodeJS.ReadableStream {
   /** @internal */
   s: GridFSBucketReadStreamPrivate;
 
@@ -81,27 +84,27 @@ export class GridFSBucketReadStream extends Readable implements NodeJS.ReadableS
    * An error occurred
    * @event
    */
-  static readonly ERROR = 'error' as const;
+  static readonly ERROR = "error" as const;
   /**
    * Fires when the stream loaded the file document corresponding to the provided id.
    * @event
    */
-  static readonly FILE = 'file' as const;
+  static readonly FILE = "file" as const;
   /**
    * Emitted when a chunk of data is available to be consumed.
    * @event
    */
-  static readonly DATA = 'data' as const;
+  static readonly DATA = "data" as const;
   /**
    * Fired when the stream is exhausted (no more data events).
    * @event
    */
-  static readonly END = 'end' as const;
+  static readonly END = "end" as const;
   /**
    * Fired when the stream is exhausted and the underlying cursor is killed
    * @event
    */
-  static readonly CLOSE = 'close' as const;
+  static readonly CLOSE = "close" as const;
 
   /** @internal
    * @param chunks - Handle for chunks collection
@@ -114,7 +117,7 @@ export class GridFSBucketReadStream extends Readable implements NodeJS.ReadableS
     files: Collection<GridFSFile>,
     readPreference: ReadPreference | undefined,
     filter: Document,
-    options?: GridFSBucketReadStreamOptions
+    options?: GridFSBucketReadStreamOptions,
   ) {
     super();
     this.s = {
@@ -130,9 +133,9 @@ export class GridFSBucketReadStream extends Readable implements NodeJS.ReadableS
       options: {
         start: 0,
         end: 0,
-        ...options
+        ...options,
       },
-      readPreference
+      readPreference,
     };
   }
 
@@ -183,7 +186,7 @@ export class GridFSBucketReadStream extends Readable implements NodeJS.ReadableS
     this.push(null);
     this.destroyed = true;
     if (this.s.cursor) {
-      this.s.cursor.close(error => {
+      this.s.cursor.close((error) => {
         this.emit(GridFSBucketReadStream.CLOSE);
         callback && callback(error);
       });
@@ -200,7 +203,9 @@ export class GridFSBucketReadStream extends Readable implements NodeJS.ReadableS
 
 function throwIfInitialized(stream: GridFSBucketReadStream): void {
   if (stream.s.init) {
-    throw new MongoGridFSStreamError('Options cannot be changed after the stream is initialized');
+    throw new MongoGridFSStreamError(
+      "Options cannot be changed after the stream is initialized",
+    );
   }
 }
 
@@ -222,7 +227,7 @@ function doRead(stream: GridFSBucketReadStream): void {
 
       process.nextTick(() => {
         if (!stream.s.cursor) return;
-        stream.s.cursor.close(error => {
+        stream.s.cursor.close((error) => {
           if (error) {
             stream.emit(GridFSBucketReadStream.ERROR, error);
             return;
@@ -244,15 +249,17 @@ function doRead(stream: GridFSBucketReadStream): void {
       return stream.emit(
         GridFSBucketReadStream.ERROR,
         new MongoGridFSChunkError(
-          `ChunkIsMissing: Got unexpected n: ${doc.n}, expected: ${expectedN}`
-        )
+          `ChunkIsMissing: Got unexpected n: ${doc.n}, expected: ${expectedN}`,
+        ),
       );
     }
 
     if (doc.n < expectedN) {
       return stream.emit(
         GridFSBucketReadStream.ERROR,
-        new MongoGridFSChunkError(`ExtraChunk: Got unexpected n: ${doc.n}, expected: ${expectedN}`)
+        new MongoGridFSChunkError(
+          `ExtraChunk: Got unexpected n: ${doc.n}, expected: ${expectedN}`,
+        ),
       );
     }
 
@@ -262,15 +269,15 @@ function doRead(stream: GridFSBucketReadStream): void {
       if (bytesRemaining <= 0) {
         return stream.emit(
           GridFSBucketReadStream.ERROR,
-          new MongoGridFSChunkError(`ExtraChunk: Got unexpected n: ${doc.n}`)
+          new MongoGridFSChunkError(`ExtraChunk: Got unexpected n: ${doc.n}`),
         );
       }
 
       return stream.emit(
         GridFSBucketReadStream.ERROR,
         new MongoGridFSChunkError(
-          `ChunkIsWrongSize: Got unexpected length: ${buf.byteLength}, expected: ${expectedLength}`
-        )
+          `ChunkIsWrongSize: Got unexpected length: ${buf.byteLength}, expected: ${expectedLength}`,
+        ),
       );
     }
 
@@ -328,7 +335,7 @@ function init(stream: GridFSBucketReadStream): void {
       const errmsg = `FileNotFound: file ${identifier} was not found`;
       // TODO(NODE-3483)
       const err = new MongoRuntimeError(errmsg);
-      err.code = 'ENOENT'; // TODO: NODE-3338 set property as part of constructor
+      err.code = "ENOENT"; // TODO: NODE-3338 set property as part of constructor
       return stream.emit(GridFSBucketReadStream.ERROR, err);
     }
 
@@ -361,7 +368,7 @@ function init(stream: GridFSBucketReadStream): void {
     if (stream.s.options && stream.s.options.start != null) {
       const skip = Math.floor(stream.s.options.start / doc.chunkSize);
       if (skip > 0) {
-        filter['n'] = { $gte: skip };
+        filter["n"] = { $gte: skip };
       }
     }
     stream.s.cursor = stream.s.chunks.find(filter).sort({ n: 1 });
@@ -374,7 +381,12 @@ function init(stream: GridFSBucketReadStream): void {
     stream.s.file = doc as GridFSFile;
 
     try {
-      stream.s.bytesToTrim = handleEndOption(stream, doc, stream.s.cursor, stream.s.options);
+      stream.s.bytesToTrim = handleEndOption(
+        stream,
+        doc,
+        stream.s.cursor,
+        stream.s.options,
+      );
     } catch (error) {
       return stream.emit(GridFSBucketReadStream.ERROR, error);
     }
@@ -393,7 +405,7 @@ function waitForFile(stream: GridFSBucketReadStream, callback: Callback): void {
     stream.s.init = true;
   }
 
-  stream.once('file', () => {
+  stream.once("file", () => {
     callback();
   });
 }
@@ -401,48 +413,55 @@ function waitForFile(stream: GridFSBucketReadStream, callback: Callback): void {
 function handleStartOption(
   stream: GridFSBucketReadStream,
   doc: Document,
-  options: GridFSBucketReadStreamOptions
+  options: GridFSBucketReadStreamOptions,
 ): number {
   if (options && options.start != null) {
     if (options.start > doc.length) {
       throw new MongoInvalidArgumentError(
-        `Stream start (${options.start}) must not be more than the length of the file (${doc.length})`
+        `Stream start (${options.start}) must not be more than the length of the file (${doc.length})`,
       );
     }
     if (options.start < 0) {
-      throw new MongoInvalidArgumentError(`Stream start (${options.start}) must not be negative`);
+      throw new MongoInvalidArgumentError(
+        `Stream start (${options.start}) must not be negative`,
+      );
     }
     if (options.end != null && options.end < options.start) {
       throw new MongoInvalidArgumentError(
-        `Stream start (${options.start}) must not be greater than stream end (${options.end})`
+        `Stream start (${options.start}) must not be greater than stream end (${options.end})`,
       );
     }
 
-    stream.s.bytesRead = Math.floor(options.start / doc.chunkSize) * doc.chunkSize;
+    stream.s.bytesRead = Math.floor(options.start / doc.chunkSize) *
+      doc.chunkSize;
     stream.s.expected = Math.floor(options.start / doc.chunkSize);
 
     return options.start - stream.s.bytesRead;
   }
-  throw new MongoInvalidArgumentError('Start option must be defined');
+  throw new MongoInvalidArgumentError("Start option must be defined");
 }
 
 function handleEndOption(
   stream: GridFSBucketReadStream,
   doc: Document,
   cursor: FindCursor<GridFSChunk>,
-  options: GridFSBucketReadStreamOptions
+  options: GridFSBucketReadStreamOptions,
 ) {
   if (options && options.end != null) {
     if (options.end > doc.length) {
       throw new MongoInvalidArgumentError(
-        `Stream end (${options.end}) must not be more than the length of the file (${doc.length})`
+        `Stream end (${options.end}) must not be more than the length of the file (${doc.length})`,
       );
     }
     if (options.start == null || options.start < 0) {
-      throw new MongoInvalidArgumentError(`Stream end (${options.end}) must not be negative`);
+      throw new MongoInvalidArgumentError(
+        `Stream end (${options.end}) must not be negative`,
+      );
     }
 
-    const start = options.start != null ? Math.floor(options.start / doc.chunkSize) : 0;
+    const start = options.start != null
+      ? Math.floor(options.start / doc.chunkSize)
+      : 0;
 
     cursor.limit(Math.ceil(options.end / doc.chunkSize) - start);
 
@@ -450,5 +469,5 @@ function handleEndOption(
 
     return Math.ceil(options.end / doc.chunkSize) * doc.chunkSize - options.end;
   }
-  throw new MongoInvalidArgumentError('End option must be defined');
+  throw new MongoInvalidArgumentError("End option must be defined");
 }
