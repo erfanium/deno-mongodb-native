@@ -1,11 +1,17 @@
-import { ReadPreference } from '../read_preference.ts';
-import * as BSON from '../bson.ts';
-import { databaseNamespace } from '../utils.ts';
-import { OP_QUERY, OP_GETMORE, OP_KILL_CURSORS, OP_MSG } from './wire_protocol/constants.ts';
-import type { Long, Document, BSONSerializeOptions } from '../bson.ts';
-import type { ClientSession } from '../sessions.ts';
-import type { CommandOptions } from './connection.ts';
-import { MongoRuntimeError, MongoInvalidArgumentError } from '../error.ts';
+import { ReadPreference } from "../read_preference.ts";
+import * as BSON from "../bson.ts";
+import { databaseNamespace } from "../utils.ts";
+import {
+  OP_GETMORE,
+  OP_KILL_CURSORS,
+  OP_MSG,
+  OP_QUERY,
+} from "./wire_protocol/constants.ts";
+import type { BSONSerializeOptions, Document, Long } from "../bson.ts";
+import type { ClientSession } from "../sessions.ts";
+import type { CommandOptions } from "./connection.ts";
+import { MongoInvalidArgumentError, MongoRuntimeError } from "../error.ts";
+import { Buffer } from "https://deno.land/std@0.118.0/node/buffer.ts";
 
 // Incrementing request id
 let _requestId = 0;
@@ -49,9 +55,9 @@ export interface OpQueryOptions extends CommandOptions {
   readPreference?: ReadPreference;
 }
 
-/**************************************************************
+/** ************************************************************
  * QUERY
- **************************************************************/
+ * ************************************************************ */
 /** @internal */
 export class Query {
   ns: string;
@@ -78,14 +84,20 @@ export class Query {
   constructor(ns: string, query: Document, options: OpQueryOptions) {
     // Basic options needed to be passed in
     // TODO(NODE-3483): Replace with MongoCommandError
-    if (ns == null) throw new MongoRuntimeError('Namespace must be specified for query');
+    if (ns == null) {
+      throw new MongoRuntimeError("Namespace must be specified for query");
+    }
     // TODO(NODE-3483): Replace with MongoCommandError
-    if (query == null) throw new MongoRuntimeError('A query document must be specified for query');
+    if (query == null) {
+      throw new MongoRuntimeError(
+        "A query document must be specified for query",
+      );
+    }
 
     // Validate that we are not passing 0x00 in the collection name
-    if (ns.indexOf('\x00') !== -1) {
+    if (ns.indexOf("\x00") !== -1) {
       // TODO(NODE-3483): Use MongoNamespace static method
-      throw new MongoRuntimeError('Namespace cannot contain a null character');
+      throw new MongoRuntimeError("Namespace cannot contain a null character");
     }
 
     // Basic options
@@ -102,17 +114,23 @@ export class Query {
     this.pre32Limit = options.pre32Limit;
 
     // Serialization option
-    this.serializeFunctions =
-      typeof options.serializeFunctions === 'boolean' ? options.serializeFunctions : false;
-    this.ignoreUndefined =
-      typeof options.ignoreUndefined === 'boolean' ? options.ignoreUndefined : false;
+    this.serializeFunctions = typeof options.serializeFunctions === "boolean"
+      ? options.serializeFunctions
+      : false;
+    this.ignoreUndefined = typeof options.ignoreUndefined === "boolean"
+      ? options.ignoreUndefined
+      : false;
     this.maxBsonSize = options.maxBsonSize || 1024 * 1024 * 16;
-    this.checkKeys = typeof options.checkKeys === 'boolean' ? options.checkKeys : false;
+    this.checkKeys = typeof options.checkKeys === "boolean"
+      ? options.checkKeys
+      : false;
     this.batchSize = this.numberToReturn;
 
     // Flags
     this.tailable = false;
-    this.slaveOk = typeof options.slaveOk === 'boolean' ? options.slaveOk : false;
+    this.slaveOk = typeof options.slaveOk === "boolean"
+      ? options.slaveOk
+      : false;
     this.oplogReplay = false;
     this.noCursorTimeout = false;
     this.awaitData = false;
@@ -137,7 +155,7 @@ export class Query {
 
   // Uses a single allocated buffer for the process, avoiding multiple memory allocations
   toBin(): Buffer[] {
-    const buffers = [];
+    const buffers: Buffer[] = [];
     let projection = null;
 
     // Set up the flags
@@ -171,7 +189,9 @@ export class Query {
     }
 
     // If batchSize is different to this.numberToReturn
-    if (this.batchSize !== this.numberToReturn) this.numberToReturn = this.batchSize;
+    if (this.batchSize !== this.numberToReturn) {
+      this.numberToReturn = this.batchSize;
+    }
 
     // Allocate write protocol header buffer
     const header = Buffer.alloc(
@@ -180,7 +200,7 @@ export class Query {
         Buffer.byteLength(this.ns) +
         1 + // namespace
         4 + // numberToSkip
-        4 // numberToReturn
+        4, // numberToReturn
     );
 
     // Add header to buffers
@@ -190,25 +210,29 @@ export class Query {
     const query = BSON.serialize(this.query, {
       checkKeys: this.checkKeys,
       serializeFunctions: this.serializeFunctions,
-      ignoreUndefined: this.ignoreUndefined
+      ignoreUndefined: this.ignoreUndefined,
     });
 
     // Add query document
-    buffers.push(query);
+    buffers.push(Buffer.from(query)); // TODO: remove buffer
 
-    if (this.returnFieldSelector && Object.keys(this.returnFieldSelector).length > 0) {
+    if (
+      this.returnFieldSelector &&
+      Object.keys(this.returnFieldSelector).length > 0
+    ) {
       // Serialize the projection document
       projection = BSON.serialize(this.returnFieldSelector, {
         checkKeys: this.checkKeys,
         serializeFunctions: this.serializeFunctions,
-        ignoreUndefined: this.ignoreUndefined
+        ignoreUndefined: this.ignoreUndefined,
       });
       // Add projection document
-      buffers.push(projection);
+      buffers.push(Buffer.from(projection)); // TODO: remove buffer
     }
 
     // Total message size
-    const totalLength = header.length + query.length + (projection ? projection.length : 0);
+    const totalLength = header.length + query.length +
+      (projection ? projection.length : 0);
 
     // Set up the index
     let index = 4;
@@ -248,7 +272,7 @@ export class Query {
     index = index + 4;
 
     // Write collection name
-    index = index + header.write(this.ns, index, 'utf8') + 1;
+    index = index + header.write(this.ns, index, "utf8") + 1;
     header[index - 1] = 0;
 
     // Write header information flags numberToSkip
@@ -275,9 +299,9 @@ export interface OpGetMoreOptions {
   numberToReturn?: number;
 }
 
-/**************************************************************
+/** ************************************************************
  * GETMORE
- **************************************************************/
+ * ************************************************************ */
 /** @internal */
 export class GetMore {
   numberToReturn: number;
@@ -337,7 +361,7 @@ export class GetMore {
     index = index + 4;
 
     // Write collection name
-    index = index + _buffer.write(this.ns, index, 'utf8') + 1;
+    index = index + _buffer.write(this.ns, index, "utf8") + 1;
     _buffer[index - 1] = 0;
 
     // Write batch size
@@ -368,9 +392,9 @@ export class GetMore {
   }
 }
 
-/**************************************************************
+/** ************************************************************
  * KILLCURSOR
- **************************************************************/
+ * ************************************************************ */
 /** @internal */
 export class KillCursor {
   ns: string;
@@ -501,7 +525,7 @@ export class Response {
     message: Buffer,
     msgHeader: MessageHeader,
     msgBody: Buffer,
-    opts?: OpResponseOptions
+    opts?: OpResponseOptions,
   ) {
     this.parsed = false;
     this.raw = message;
@@ -510,7 +534,7 @@ export class Response {
       promoteLongs: true,
       promoteValues: true,
       promoteBuffers: false,
-      bsonRegExp: false
+      bsonRegExp: false,
     };
 
     // Read the message header
@@ -522,7 +546,10 @@ export class Response {
 
     // Read the message body
     this.responseFlags = msgBody.readInt32LE(0);
-    this.cursorId = new BSON.Long(msgBody.readInt32LE(4), msgBody.readInt32LE(8));
+    this.cursorId = new BSON.Long(
+      msgBody.readInt32LE(4),
+      msgBody.readInt32LE(8),
+    );
     this.startingFrom = msgBody.readInt32LE(12);
     this.numberReturned = msgBody.readInt32LE(16);
 
@@ -534,12 +561,18 @@ export class Response {
     this.queryFailure = (this.responseFlags & QUERY_FAILURE) !== 0;
     this.shardConfigStale = (this.responseFlags & SHARD_CONFIG_STALE) !== 0;
     this.awaitCapable = (this.responseFlags & AWAIT_CAPABLE) !== 0;
-    this.promoteLongs = typeof this.opts.promoteLongs === 'boolean' ? this.opts.promoteLongs : true;
-    this.promoteValues =
-      typeof this.opts.promoteValues === 'boolean' ? this.opts.promoteValues : true;
-    this.promoteBuffers =
-      typeof this.opts.promoteBuffers === 'boolean' ? this.opts.promoteBuffers : false;
-    this.bsonRegExp = typeof this.opts.bsonRegExp === 'boolean' ? this.opts.bsonRegExp : false;
+    this.promoteLongs = typeof this.opts.promoteLongs === "boolean"
+      ? this.opts.promoteLongs
+      : true;
+    this.promoteValues = typeof this.opts.promoteValues === "boolean"
+      ? this.opts.promoteValues
+      : true;
+    this.promoteBuffers = typeof this.opts.promoteBuffers === "boolean"
+      ? this.opts.promoteBuffers
+      : false;
+    this.bsonRegExp = typeof this.opts.bsonRegExp === "boolean"
+      ? this.opts.bsonRegExp
+      : false;
   }
 
   isParsed(): boolean {
@@ -565,7 +598,7 @@ export class Response {
       promoteLongs,
       promoteValues,
       promoteBuffers,
-      bsonRegExp
+      bsonRegExp,
     };
 
     // Position within OP_REPLY at which documents start
@@ -574,8 +607,7 @@ export class Response {
 
     // Parse Body
     for (let i = 0; i < this.numberReturned; i++) {
-      bsonSize =
-        this.data[this.index] |
+      bsonSize = this.data[this.index] |
         (this.data[this.index + 1] << 8) |
         (this.data[this.index + 2] << 16) |
         (this.data[this.index + 3] << 24);
@@ -586,7 +618,7 @@ export class Response {
       } else {
         this.documents[i] = BSON.deserialize(
           this.data.slice(this.index, this.index + bsonSize),
-          _options
+          _options,
         );
       }
 
@@ -667,15 +699,21 @@ export class Msg {
 
   constructor(ns: string, command: Document, options: OpQueryOptions) {
     // Basic options needed to be passed in
-    if (command == null)
-      throw new MongoInvalidArgumentError('Query document must be specified for query');
+    if (command == null) {
+      throw new MongoInvalidArgumentError(
+        "Query document must be specified for query",
+      );
+    }
 
     // Basic options
     this.ns = ns;
     this.command = command;
     this.command.$db = databaseNamespace(ns);
 
-    if (options.readPreference && options.readPreference.mode !== ReadPreference.PRIMARY) {
+    if (
+      options.readPreference &&
+      options.readPreference.mode !== ReadPreference.PRIMARY
+    ) {
       this.command.$readPreference = options.readPreference.toJSON();
     }
 
@@ -686,18 +724,23 @@ export class Msg {
     this.requestId = options.requestId ? options.requestId : Msg.getRequestId();
 
     // Serialization option
-    this.serializeFunctions =
-      typeof options.serializeFunctions === 'boolean' ? options.serializeFunctions : false;
-    this.ignoreUndefined =
-      typeof options.ignoreUndefined === 'boolean' ? options.ignoreUndefined : false;
-    this.checkKeys = typeof options.checkKeys === 'boolean' ? options.checkKeys : false;
+    this.serializeFunctions = typeof options.serializeFunctions === "boolean"
+      ? options.serializeFunctions
+      : false;
+    this.ignoreUndefined = typeof options.ignoreUndefined === "boolean"
+      ? options.ignoreUndefined
+      : false;
+    this.checkKeys = typeof options.checkKeys === "boolean"
+      ? options.checkKeys
+      : false;
     this.maxBsonSize = options.maxBsonSize || 1024 * 1024 * 16;
 
     // flags
     this.checksumPresent = false;
     this.moreToCome = options.moreToCome || false;
-    this.exhaustAllowed =
-      typeof options.exhaustAllowed === 'boolean' ? options.exhaustAllowed : false;
+    this.exhaustAllowed = typeof options.exhaustAllowed === "boolean"
+      ? options.exhaustAllowed
+      : false;
   }
 
   toBin(): Buffer[] {
@@ -718,7 +761,7 @@ export class Msg {
 
     const header = Buffer.alloc(
       4 * 4 + // Header
-        4 // Flags
+        4, // Flags
     );
 
     buffers.push(header);
@@ -747,11 +790,11 @@ export class Msg {
   }
 
   serializeBson(document: Document): Buffer {
-    return BSON.serialize(document, {
+    return Buffer.from(BSON.serialize(document, {
       checkKeys: this.checkKeys,
       serializeFunctions: this.serializeFunctions,
-      ignoreUndefined: this.ignoreUndefined
-    });
+      ignoreUndefined: this.ignoreUndefined,
+    })); // TODO: remove buffer
   }
 
   static getRequestId(): number {
@@ -786,7 +829,7 @@ export class BinMsg {
     message: Buffer,
     msgHeader: MessageHeader,
     msgBody: Buffer,
-    opts?: OpResponseOptions
+    opts?: OpResponseOptions,
   ) {
     this.parsed = false;
     this.raw = message;
@@ -795,7 +838,7 @@ export class BinMsg {
       promoteLongs: true,
       promoteValues: true,
       promoteBuffers: false,
-      bsonRegExp: false
+      bsonRegExp: false,
     };
 
     // Read the message header
@@ -810,12 +853,18 @@ export class BinMsg {
     this.checksumPresent = (this.responseFlags & OPTS_CHECKSUM_PRESENT) !== 0;
     this.moreToCome = (this.responseFlags & OPTS_MORE_TO_COME) !== 0;
     this.exhaustAllowed = (this.responseFlags & OPTS_EXHAUST_ALLOWED) !== 0;
-    this.promoteLongs = typeof this.opts.promoteLongs === 'boolean' ? this.opts.promoteLongs : true;
-    this.promoteValues =
-      typeof this.opts.promoteValues === 'boolean' ? this.opts.promoteValues : true;
-    this.promoteBuffers =
-      typeof this.opts.promoteBuffers === 'boolean' ? this.opts.promoteBuffers : false;
-    this.bsonRegExp = typeof this.opts.bsonRegExp === 'boolean' ? this.opts.bsonRegExp : false;
+    this.promoteLongs = typeof this.opts.promoteLongs === "boolean"
+      ? this.opts.promoteLongs
+      : true;
+    this.promoteValues = typeof this.opts.promoteValues === "boolean"
+      ? this.opts.promoteValues
+      : true;
+    this.promoteBuffers = typeof this.opts.promoteBuffers === "boolean"
+      ? this.opts.promoteBuffers
+      : false;
+    this.bsonRegExp = typeof this.opts.bsonRegExp === "boolean"
+      ? this.opts.bsonRegExp
+      : false;
 
     this.documents = [];
   }
@@ -843,7 +892,7 @@ export class BinMsg {
       promoteLongs,
       promoteValues,
       promoteBuffers,
-      bsonRegExp
+      bsonRegExp,
     };
 
     while (this.index < this.data.length) {
@@ -858,7 +907,9 @@ export class BinMsg {
         // It was decided that no driver makes use of payload type 1
 
         // TODO(NODE-3483): Replace with MongoDeprecationError
-        throw new MongoRuntimeError('OP_MSG Payload Type 1 detected unsupported protocol');
+        throw new MongoRuntimeError(
+          "OP_MSG Payload Type 1 detected unsupported protocol",
+        );
       }
     }
 

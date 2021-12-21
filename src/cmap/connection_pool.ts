@@ -1,4 +1,5 @@
-import Denque = require("denque");
+// @deno-types="https://deno.land/x/denque@v2.0.1/index.d.ts"
+import Denque from "https://deno.land/x/denque@v2.0.1/index.js";
 import {
   APM_EVENTS,
   Connection,
@@ -227,13 +228,11 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
     this[kCheckedOut] = 0;
     this[kProcessingWaitQueue] = false;
 
-    process.nextTick(() => {
-      this.emit(
-        ConnectionPool.CONNECTION_POOL_CREATED,
-        new ConnectionPoolCreatedEvent(this),
-      );
-      ensureMinPoolSize(this);
-    });
+    this.emit(
+      ConnectionPool.CONNECTION_POOL_CREATED,
+      new ConnectionPoolCreatedEvent(this),
+    );
+    ensureMinPoolSize(this);
   }
 
   /** The address of the endpoint the pool is connected to */
@@ -324,7 +323,7 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
 
     this[kCheckedOut] = this[kCheckedOut] + 1;
     this[kWaitQueue].push(waitQueueMember);
-    process.nextTick(processWaitQueue, this);
+    processWaitQueue(this); // TODO: maybe nextTick?
   }
 
   /**
@@ -357,7 +356,7 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
       destroyConnection(this, connection, reason);
     }
 
-    process.nextTick(processWaitQueue, this);
+    processWaitQueue(this); // TODO: maybe nextTick?
   }
 
   /**
@@ -618,7 +617,7 @@ function createConnection(
 
     // otherwise add it to the pool for later acquisition, and try to process the wait queue
     pool[kConnections].push(connection);
-    process.nextTick(processWaitQueue, pool);
+    processWaitQueue(pool);
   });
 }
 
@@ -636,7 +635,7 @@ function destroyConnection(
   pool[kPermits]++;
 
   // destroy the connection
-  process.nextTick(() => connection.destroy());
+  connection.destroy(); // TODO: maybe nextTick?
 }
 
 function processWaitQueue(pool: ConnectionPool) {
@@ -718,7 +717,7 @@ function processWaitQueue(pool: ConnectionPool) {
       }
       waitQueueMember.callback(err, connection);
       pool[kProcessingWaitQueue] = false;
-      process.nextTick(() => processWaitQueue(pool));
+      processWaitQueue(pool); // TODO: maybe nextTick?
     });
   } else {
     pool[kProcessingWaitQueue] = false;

@@ -632,11 +632,11 @@ export function databaseNamespace(ns: string): string {
  * Synchronously Generate a UUIDv4
  * @internal
  */
-export function uuidV4(): Uint8Array {
+export function uuidV4(): Buffer {
   const result = crypto.getRandomValues(new Uint8Array(16));
   result[6] = (result[6] & 0x0f) | 0x40;
   result[8] = (result[8] & 0x3f) | 0x80;
-  return result;
+  return Buffer.from(result); // TODO: remove buffer
 }
 
 /**
@@ -911,12 +911,6 @@ export function makeClientMetadata(
 }
 
 /** @internal */
-export function now(): number { // TODO
-  const hrtime = process.hrtime();
-  return Math.floor(hrtime[0] * 1000 + hrtime[1] / 1000000);
-}
-
-/** @internal */
 export function calculateDurationInMs(started: number): number {
   if (typeof started !== "number") {
     throw new MongoInvalidArgumentError(
@@ -924,7 +918,7 @@ export function calculateDurationInMs(started: number): number {
     );
   }
 
-  const elapsed = now() - started;
+  const elapsed = performance.now() - started;
   return elapsed < 0 ? 0 : elapsed;
 }
 
@@ -1388,7 +1382,7 @@ export const MONGODB_WARNING_CODE = "MONGODB DRIVER" as const;
 
 /** @internal */
 export function emitWarning(message: string): void {
-  return process.emitWarning(message, { code: MONGODB_WARNING_CODE } as any);
+  // return process.emitWarning(message, { code: MONGODB_WARNING_CODE } as any); // TODO
 }
 
 const emittedWarnings = new Set();

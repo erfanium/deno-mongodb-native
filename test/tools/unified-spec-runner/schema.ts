@@ -1,11 +1,11 @@
-import { ServerApiVersion } from '../../../src';
-import type { Document, ObjectId } from '../../../src/bson';
-import type { ReadConcernLevel } from '../../../src/read_concern';
-import type { ReadPreferenceMode } from '../../../src/read_preference';
-import type { TagSet } from '../../../src/sdam/server_description';
-import type { W } from '../../../src/write_concern';
+import { ServerApiVersion } from "../../../src";
+import type { Document, ObjectId } from "../../../src/bson";
+import type { ReadConcernLevel } from "../../../src/read_concern";
+import type { ReadPreferenceMode } from "../../../src/read_preference";
+import type { TagSet } from "../../../src/sdam/server_description";
+import type { W } from "../../../src/write_concern";
 
-export const SupportedVersion = '^1.0';
+export const SupportedVersion = "^1.0";
 
 export interface OperationDescription {
   name: string;
@@ -25,13 +25,15 @@ export interface UnifiedSuite {
   tests: [Test, ...Test[]];
   _yamlAnchors?: Document;
 }
-export const TopologyType = Object.freeze({
-  single: 'single',
-  replicaset: 'replicaset',
-  sharded: 'sharded',
-  shardedReplicaset: 'sharded-replicaset',
-  loadBalanced: 'load-balanced'
-} as const);
+export const TopologyType = Object.freeze(
+  {
+    single: "single",
+    replicaset: "replicaset",
+    sharded: "sharded",
+    shardedReplicaset: "sharded-replicaset",
+    loadBalanced: "load-balanced",
+  } as const,
+);
 export type TopologyId = typeof TopologyType[keyof typeof TopologyType];
 export interface RunOnRequirement {
   maxServerVersion?: string;
@@ -40,20 +42,20 @@ export interface RunOnRequirement {
   serverParameters?: Document;
 }
 export type ObservableCommandEventId =
-  | 'commandStartedEvent'
-  | 'commandSucceededEvent'
-  | 'commandFailedEvent';
+  | "commandStartedEvent"
+  | "commandSucceededEvent"
+  | "commandFailedEvent";
 export type ObservableCmapEventId =
-  | 'connectionPoolCreatedEvent'
-  | 'connectionPoolClosedEvent'
-  | 'connectionPoolClearedEvent'
-  | 'connectionCreatedEvent'
-  | 'connectionReadyEvent'
-  | 'connectionClosedEvent'
-  | 'connectionCheckOutStartedEvent'
-  | 'connectionCheckOutFailedEvent'
-  | 'connectionCheckedOutEvent'
-  | 'connectionCheckedInEvent';
+  | "connectionPoolCreatedEvent"
+  | "connectionPoolClosedEvent"
+  | "connectionPoolClearedEvent"
+  | "connectionCreatedEvent"
+  | "connectionReadyEvent"
+  | "connectionClosedEvent"
+  | "connectionCheckOutStartedEvent"
+  | "connectionCheckOutFailedEvent"
+  | "connectionCheckedOutEvent"
+  | "connectionCheckedInEvent";
 
 export interface ClientEntity {
   id: string;
