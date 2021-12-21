@@ -1,4 +1,4 @@
-import { MongoInvalidArgumentError } from './error';
+import { MongoInvalidArgumentError } from './error.ts';
 
 /** @public */
 export const ExplainVerbosity = Object.freeze({

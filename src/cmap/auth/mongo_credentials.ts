@@ -1,8 +1,8 @@
 // Resolves the default auth mechanism according to
 
-import type { Document } from '../../bson';
-import { MongoAPIError, MongoMissingCredentialsError } from '../../error';
-import { AuthMechanism } from './defaultAuthProviders';
+import type { Document } from '../../bson.ts';
+import { MongoAPIError, MongoMissingCredentialsError } from '../../error.ts';
+import { AuthMechanism } from './defaultAuthProviders.ts';
 
 // https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst
 function getDefaultAuthMechanism(ismaster?: Document): AuthMechanism {

@@ -8,9 +8,9 @@ import type {
   Double,
   Int32,
   Long
-} from './bson';
+} from './bson.ts';
 import { EventEmitter } from 'events';
-import type { Sort } from './sort';
+import type { Sort } from './sort.ts';
 
 /** @internal */
 export type TODO_NODE_3286 = any;

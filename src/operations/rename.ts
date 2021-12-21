@@ -1,11 +1,11 @@
-import { checkCollectionName, Callback } from '../utils';
-import { RunAdminCommandOperation } from './run_command';
-import { defineAspects, Aspect } from './operation';
-import type { Server } from '../sdam/server';
-import { Collection } from '../collection';
-import type { CommandOperationOptions } from './command';
-import { MongoServerError } from '../error';
-import type { ClientSession } from '../sessions';
+import { checkCollectionName, Callback } from '../utils.ts';
+import { RunAdminCommandOperation } from './run_command.ts';
+import { defineAspects, Aspect } from './operation.ts';
+import type { Server } from '../sdam/server.ts';
+import { Collection } from '../collection.ts';
+import type { CommandOperationOptions } from './command.ts';
+import { MongoServerError } from '../error.ts';
+import type { ClientSession } from '../sessions.ts';
 import type { Document } from 'bson';
 
 /** @public */

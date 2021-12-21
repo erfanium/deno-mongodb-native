@@ -1,14 +1,14 @@
-import { AuthProvider, AuthContext } from './auth_provider';
+import { AuthProvider, AuthContext } from './auth_provider.ts';
 import {
   MongoRuntimeError,
   MongoInvalidArgumentError,
   MongoMissingCredentialsError,
   MongoError,
   MongoMissingDependencyError
-} from '../../error';
-import { Kerberos, KerberosClient } from '../../deps';
-import { Callback, ns } from '../../utils';
-import type { Document } from '../../bson';
+} from '../../error.ts';
+import { Kerberos, KerberosClient } from '../../deps.ts';
+import { Callback, ns } from '../../utils.ts';
+import type { Document } from '../../bson.ts';
 
 type MechanismProperties = {
   gssapiCanonicalizeHostName?: boolean;

@@ -1,5 +1,5 @@
-import { MongoDriverError } from '../error';
-import type { ConnectionPool } from './connection_pool';
+import { MongoDriverError } from '../error.ts';
+import type { ConnectionPool } from './connection_pool.ts';
 
 /**
  * An error indicating a connection pool is closed

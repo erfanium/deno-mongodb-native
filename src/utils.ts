@@ -1,33 +1,37 @@
-import * as os from 'os';
-import * as crypto from 'crypto';
-import { PromiseProvider } from './promise_provider';
+import { PromiseProvider } from "./promise_provider.ts";
 import {
   AnyError,
+  MongoCompatibilityError,
+  MongoExpiredSessionError,
+  MongoInvalidArgumentError,
+  MongoNotConnectedError,
   MongoParseError,
   MongoRuntimeError,
-  MongoCompatibilityError,
-  MongoNotConnectedError,
-  MongoInvalidArgumentError,
-  MongoExpiredSessionError
-} from './error';
-import { WriteConcern, WriteConcernOptions, W } from './write_concern';
-import type { Server } from './sdam/server';
-import type { Topology } from './sdam/topology';
-import { ServerType } from './sdam/common';
-import type { Db } from './db';
-import type { Collection } from './collection';
-import type { OperationOptions, Hint } from './operations/operation';
-import type { ClientSession } from './sessions';
-import { ReadConcern } from './read_concern';
-import type { Connection } from './cmap/connection';
-import { Document, ObjectId, resolveBSONOptions } from './bson';
-import type { IndexSpecification, IndexDirection } from './operations/indexes';
-import type { Explain } from './explain';
-import type { MongoClient } from './mongo_client';
-import type { CommandOperationOptions, OperationParent } from './operations/command';
-import { ReadPreference } from './read_preference';
-import { URL } from 'url';
-import { MAX_SUPPORTED_WIRE_VERSION } from './cmap/wire_protocol/constants';
+} from "./error.ts";
+import { W, WriteConcern, WriteConcernOptions } from "./write_concern.ts";
+import type { Server } from "./sdam/server.ts";
+import type { Topology } from "./sdam/topology.ts";
+import { ServerType } from "./sdam/common.ts";
+import type { Db } from "./db.ts";
+import type { Collection } from "./collection.ts";
+import type { Hint, OperationOptions } from "./operations/operation.ts";
+import type { ClientSession } from "./sessions.ts";
+import { ReadConcern } from "./read_concern.ts";
+import type { Connection } from "./cmap/connection.ts";
+import { Document, ObjectId, resolveBSONOptions } from "./bson.ts";
+import type {
+  IndexDirection,
+  IndexSpecification,
+} from "./operations/indexes.ts";
+import type { Explain } from "./explain.ts";
+import type { MongoClient } from "./mongo_client.ts";
+import type {
+  CommandOperationOptions,
+  OperationParent,
+} from "./operations/command.ts";
+import { ReadPreference } from "./read_preference.ts";
+import { MAX_SUPPORTED_WIRE_VERSION } from "./cmap/wire_protocol/constants.ts";
+import { Buffer } from "https://deno.land/std@0.118.0/node/buffer.ts";
 
 /**
  * MongoDB Driver style callback
@@ -35,7 +39,10 @@ import { MAX_SUPPORTED_WIRE_VERSION } from './cmap/wire_protocol/constants';
  */
 export type Callback<T = any> = (error?: AnyError, result?: T) => void;
 /** @public */
-export type CallbackWithType<E = AnyError, T0 = any> = (error?: E, result?: T0) => void;
+export type CallbackWithType<E = AnyError, T0 = any> = (
+  error?: E,
+  result?: T0,
+) => void;
 
 export const MAX_JS_INT = Number.MAX_SAFE_INTEGER + 1;
 
@@ -46,31 +53,37 @@ export type AnyOptions = Document;
  * @internal
  */
 export function checkCollectionName(collectionName: string): void {
-  if ('string' !== typeof collectionName) {
-    throw new MongoInvalidArgumentError('Collection name must be a String');
+  if ("string" !== typeof collectionName) {
+    throw new MongoInvalidArgumentError("Collection name must be a String");
   }
 
-  if (!collectionName || collectionName.indexOf('..') !== -1) {
-    throw new MongoInvalidArgumentError('Collection names cannot be empty');
+  if (!collectionName || collectionName.indexOf("..") !== -1) {
+    throw new MongoInvalidArgumentError("Collection names cannot be empty");
   }
 
   if (
-    collectionName.indexOf('$') !== -1 &&
+    collectionName.indexOf("$") !== -1 &&
     collectionName.match(/((^\$cmd)|(oplog\.\$main))/) == null
   ) {
     // TODO(NODE-3483): Use MongoNamespace static method
-    throw new MongoInvalidArgumentError("Collection names must not contain '$'");
+    throw new MongoInvalidArgumentError(
+      "Collection names must not contain '$'",
+    );
   }
 
   if (collectionName.match(/^\.|\.$/) != null) {
     // TODO(NODE-3483): Use MongoNamespace static method
-    throw new MongoInvalidArgumentError("Collection names must not start or end with '.'");
+    throw new MongoInvalidArgumentError(
+      "Collection names must not start or end with '.'",
+    );
   }
 
   // Validate that we are not passing 0x00 in the collection name
-  if (collectionName.indexOf('\x00') !== -1) {
+  if (collectionName.indexOf("\x00") !== -1) {
     // TODO(NODE-3483): Use MongoNamespace static method
-    throw new MongoInvalidArgumentError('Collection names cannot contain a null character');
+    throw new MongoInvalidArgumentError(
+      "Collection names cannot contain a null character",
+    );
   }
 }
 
@@ -83,15 +96,15 @@ export function checkCollectionName(collectionName: string): void {
 export function normalizeHintField(hint?: Hint): Hint | undefined {
   let finalHint = undefined;
 
-  if (typeof hint === 'string') {
+  if (typeof hint === "string") {
     finalHint = hint;
   } else if (Array.isArray(hint)) {
     finalHint = {};
 
-    hint.forEach(param => {
+    hint.forEach((param) => {
       finalHint[param] = 1;
     });
-  } else if (hint != null && typeof hint === 'object') {
+  } else if (hint != null && typeof hint === "object") {
     finalHint = {} as Document;
     for (const name in hint) {
       finalHint[name] = hint[name];
@@ -117,25 +130,25 @@ export function parseIndexOptions(indexSpec: IndexSpecification): IndexOptions {
   let keys;
 
   // Get all the fields accordingly
-  if ('string' === typeof indexSpec) {
+  if ("string" === typeof indexSpec) {
     // 'type'
-    indexes.push(indexSpec + '_' + 1);
+    indexes.push(indexSpec + "_" + 1);
     fieldHash[indexSpec] = 1;
   } else if (Array.isArray(indexSpec)) {
     indexSpec.forEach((f: any) => {
-      if ('string' === typeof f) {
+      if ("string" === typeof f) {
         // [{location:'2d'}, 'type']
-        indexes.push(f + '_' + 1);
+        indexes.push(f + "_" + 1);
         fieldHash[f] = 1;
       } else if (Array.isArray(f)) {
         // [['location', '2d'],['type', 1]]
-        indexes.push(f[0] + '_' + (f[1] || 1));
+        indexes.push(f[0] + "_" + (f[1] || 1));
         fieldHash[f[0]] = f[1] || 1;
       } else if (isObject(f)) {
         // [{location:'2d'}, {type:1}]
         keys = Object.keys(f);
-        keys.forEach(k => {
-          indexes.push(k + '_' + (f as AnyOptions)[k]);
+        keys.forEach((k) => {
+          indexes.push(k + "_" + (f as AnyOptions)[k]);
           fieldHash[k] = (f as AnyOptions)[k];
         });
       } else {
@@ -146,15 +159,15 @@ export function parseIndexOptions(indexSpec: IndexSpecification): IndexOptions {
     // {location:'2d', type:1}
     keys = Object.keys(indexSpec);
     Object.entries(indexSpec).forEach(([key, value]) => {
-      indexes.push(key + '_' + value);
+      indexes.push(key + "_" + value);
       fieldHash[key] = value;
     });
   }
 
   return {
-    name: indexes.join('_'),
+    name: indexes.join("_"),
     keys: keys,
-    fieldHash: fieldHash
+    fieldHash: fieldHash,
   };
 }
 
@@ -165,7 +178,7 @@ export function parseIndexOptions(indexSpec: IndexSpecification): IndexOptions {
  */
 // eslint-disable-next-line @typescript-eslint/ban-types
 export function isObject(arg: unknown): arg is object {
-  return '[object Object]' === Object.prototype.toString.call(arg);
+  return "[object Object]" === Object.prototype.toString.call(arg);
 }
 
 /** @internal */
@@ -174,7 +187,10 @@ export function mergeOptions<T, S>(target: T, source: S): T & S {
 }
 
 /** @internal */
-export function filterOptions(options: AnyOptions, names: string[]): AnyOptions {
+export function filterOptions(
+  options: AnyOptions,
+  names: string[],
+): AnyOptions {
   const filterOptions: AnyOptions = {};
 
   for (const name in options) {
@@ -208,13 +224,15 @@ export function executeLegacyOperation(
   topology: Topology,
   operation: (...args: any[]) => void | Promise<Document>,
   args: any[],
-  options?: AnyOptions
+  options?: AnyOptions,
 ): void | Promise<any> {
   const Promise = PromiseProvider.get();
 
   if (!Array.isArray(args)) {
     // TODO(NODE-3483)
-    throw new MongoRuntimeError('This method requires an array of arguments to apply');
+    throw new MongoRuntimeError(
+      "This method requires an array of arguments to apply",
+    );
   }
 
   options = options ?? {};
@@ -232,7 +250,9 @@ export function executeLegacyOperation(
       owner = Symbol();
       session = topology.startSession({ owner });
       const optionsIndex = args.length - 2;
-      args[optionsIndex] = Object.assign({}, args[optionsIndex], { session: session });
+      args[optionsIndex] = Object.assign({}, args[optionsIndex], {
+        session: session,
+      });
     } else if (opOptions.session && opOptions.session.hasEnded) {
       throw new MongoExpiredSessionError();
     }
@@ -240,7 +260,7 @@ export function executeLegacyOperation(
 
   function makeExecuteCallback(
     resolve: (value?: Document) => void,
-    reject: (reason?: AnyError) => void
+    reject: (reason?: AnyError) => void,
   ) {
     return function (err?: AnyError, result?: any) {
       if (session && session.owner === owner && !options?.returnsCursor) {
@@ -257,11 +277,11 @@ export function executeLegacyOperation(
   }
 
   // Execute using callback
-  if (typeof callback === 'function') {
+  if (typeof callback === "function") {
     callback = args.pop();
     const handler = makeExecuteCallback(
-      result => callback(undefined, result),
-      err => callback(err, null)
+      (result) => callback(undefined, result),
+      (err) => callback(err, null),
     );
     args.push(handler);
 
@@ -276,7 +296,9 @@ export function executeLegacyOperation(
   // Return a Promise
   if (args[args.length - 1] != null) {
     // TODO(NODE-3483)
-    throw new MongoRuntimeError('Final argument to `executeLegacyOperation` must be a callback');
+    throw new MongoRuntimeError(
+      "Final argument to `executeLegacyOperation` must be a callback",
+    );
   }
 
   return new Promise<any>((resolve, reject) => {
@@ -301,7 +323,10 @@ interface HasRetryableWrites {
  * @param target - The target command to which we will apply retryWrites.
  * @param db - The database from which we can inherit a retryWrites value.
  */
-export function applyRetryableWrites<T extends HasRetryableWrites>(target: T, db?: Db): T {
+export function applyRetryableWrites<T extends HasRetryableWrites>(
+  target: T,
+  db?: Db,
+): T {
   if (db && db.s.options?.retryWrites) {
     target.retryWrites = true;
   }
@@ -324,7 +349,7 @@ interface HasWriteConcern {
 export function applyWriteConcern<T extends HasWriteConcern>(
   target: T,
   sources: { db?: Db; collection?: Collection },
-  options?: OperationOptions & WriteConcernOptions
+  options?: OperationOptions & WriteConcernOptions,
 ): T {
   options = options ?? {};
   const db = sources.db;
@@ -345,11 +370,15 @@ export function applyWriteConcern<T extends HasWriteConcern>(
   }
 
   if (coll && coll.writeConcern) {
-    return Object.assign(target, { writeConcern: Object.assign({}, coll.writeConcern) });
+    return Object.assign(target, {
+      writeConcern: Object.assign({}, coll.writeConcern),
+    });
   }
 
   if (db && db.writeConcern) {
-    return Object.assign(target, { writeConcern: Object.assign({}, db.writeConcern) });
+    return Object.assign(target, {
+      writeConcern: Object.assign({}, db.writeConcern),
+    });
   }
 
   return target;
@@ -363,9 +392,9 @@ export function applyWriteConcern<T extends HasWriteConcern>(
  * @returns true if the provided value is a Promise
  */
 export function isPromiseLike<T = any>(
-  maybePromise?: PromiseLike<T> | void
+  maybePromise?: PromiseLike<T> | void,
 ): maybePromise is Promise<T> {
-  return !!maybePromise && typeof maybePromise.then === 'function';
+  return !!maybePromise && typeof maybePromise.then === "function";
 }
 
 /**
@@ -379,14 +408,16 @@ export function isPromiseLike<T = any>(
 export function decorateWithCollation(
   command: Document,
   target: MongoClient | Db | Collection,
-  options: AnyOptions
+  options: AnyOptions,
 ): void {
   const capabilities = getTopology(target).capabilities;
-  if (options.collation && typeof options.collation === 'object') {
+  if (options.collation && typeof options.collation === "object") {
     if (capabilities && capabilities.commandsTakeCollation) {
       command.collation = options.collation;
     } else {
-      throw new MongoCompatibilityError(`Current topology does not support collation`);
+      throw new MongoCompatibilityError(
+        `Current topology does not support collation`,
+      );
     }
   }
 }
@@ -401,7 +432,7 @@ export function decorateWithCollation(
 export function decorateWithReadConcern(
   command: Document,
   coll: { s: { readConcern?: ReadConcern } },
-  options?: OperationOptions
+  options?: OperationOptions,
 ): void {
   if (options && options.session && options.session.inTransaction()) {
     return;
@@ -423,7 +454,10 @@ export function decorateWithReadConcern(
  * @param command - the command on which to apply the explain
  * @param options - the options containing the explain verbosity
  */
-export function decorateWithExplain(command: Document, explain: Explain): Document {
+export function decorateWithExplain(
+  command: Document,
+  explain: Explain,
+): Document {
   if (command.explain) {
     return command;
   }
@@ -436,16 +470,20 @@ export function decorateWithExplain(command: Document, explain: Explain): Docume
  * if the topology cannot be found.
  * @internal
  */
-export function getTopology<T>(provider: MongoClient | Db | Collection<T>): Topology {
+export function getTopology<T>(
+  provider: MongoClient | Db | Collection<T>,
+): Topology {
   if (`topology` in provider && provider.topology) {
     return provider.topology;
-  } else if ('client' in provider.s && provider.s.client.topology) {
+  } else if ("client" in provider.s && provider.s.client.topology) {
     return provider.s.client.topology;
-  } else if ('db' in provider.s && provider.s.db.s.client.topology) {
+  } else if ("db" in provider.s && provider.s.db.s.client.topology) {
     return provider.s.db.s.client.topology;
   }
 
-  throw new MongoNotConnectedError('MongoClient must be connected to perform this operation');
+  throw new MongoNotConnectedError(
+    "MongoClient must be connected to perform this operation",
+  );
 }
 
 /**
@@ -483,12 +521,8 @@ export interface DeprecateOptionsConfig {
 export function deprecateOptions(
   this: unknown,
   config: DeprecateOptionsConfig,
-  fn: (...args: any[]) => any
+  fn: (...args: any[]) => any,
 ): any {
-  if ((process as any).noDeprecation === true) {
-    return fn;
-  }
-
   const msgHandler = config.msgHandler ? config.msgHandler : defaultMsgHandler;
 
   const optionsWarned = new Set();
@@ -506,7 +540,7 @@ export function deprecateOptions(
         optionsWarned.add(deprecatedOption);
         const msg = msgHandler(config.name, deprecatedOption);
         emitWarning(msg);
-        if (this && 'getLogger' in this) {
+        if (this && "getLogger" in this) {
           const logger = this.getLogger();
           if (logger) {
             logger.warn(msg);
@@ -565,8 +599,8 @@ export class MongoDBNamespace {
       throw new MongoRuntimeError(`Cannot parse namespace from "${namespace}"`);
     }
 
-    const [db, ...collection] = namespace.split('.');
-    return new MongoDBNamespace(db, collection.join('.'));
+    const [db, ...collection] = namespace.split(".");
+    return new MongoDBNamespace(db, collection.join("."));
   }
 }
 
@@ -588,53 +622,18 @@ export function* makeCounter(seed = 0): Generator<number> {
  * @param wrapper - A function that wraps the callback
  * @returns Returns void if a callback is supplied, else returns a Promise.
  */
-export function maybePromise<T>(
-  callback: Callback<T> | undefined,
-  wrapper: (fn: Callback<T>) => void
-): Promise<T> | void {
-  const Promise = PromiseProvider.get();
-  let result: Promise<T> | void;
-  if (typeof callback !== 'function') {
-    result = new Promise<any>((resolve, reject) => {
-      callback = (err, res) => {
-        if (err) return reject(err);
-        resolve(res);
-      };
-    });
-  }
-
-  wrapper((err, res) => {
-    if (err != null) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        callback!(err);
-      } catch (error) {
-        process.nextTick(() => {
-          throw error;
-        });
-      }
-
-      return;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    callback!(err, res);
-  });
-
-  return result;
-}
 
 /** @internal */
 export function databaseNamespace(ns: string): string {
-  return ns.split('.')[0];
+  return ns.split(".")[0];
 }
 
 /**
  * Synchronously Generate a UUIDv4
  * @internal
  */
-export function uuidV4(): Buffer {
-  const result = crypto.randomBytes(16);
+export function uuidV4(): Uint8Array {
+  const result = crypto.getRandomValues(new Uint8Array(16));
   result[6] = (result[6] & 0x0f) | 0x40;
   result[8] = (result[8] & 0x3f) | 0x80;
   return result;
@@ -644,7 +643,9 @@ export function uuidV4(): Buffer {
  * A helper function for determining `maxWireVersion` between legacy and new topology instances
  * @internal
  */
-export function maxWireVersion(topologyOrServer?: Connection | Topology | Server): number {
+export function maxWireVersion(
+  topologyOrServer?: Connection | Topology | Server,
+): number {
   if (topologyOrServer) {
     if (topologyOrServer.loadBalanced) {
       // Since we do not have a monitor, we assume the load balanced server is always
@@ -657,7 +658,10 @@ export function maxWireVersion(topologyOrServer?: Connection | Topology | Server
       return topologyOrServer.ismaster.maxWireVersion;
     }
 
-    if ('lastIsMaster' in topologyOrServer && typeof topologyOrServer.lastIsMaster === 'function') {
+    if (
+      "lastIsMaster" in topologyOrServer &&
+      typeof topologyOrServer.lastIsMaster === "function"
+    ) {
       const lastIsMaster = topologyOrServer.lastIsMaster();
       if (lastIsMaster) {
         return lastIsMaster.maxWireVersion;
@@ -666,7 +670,7 @@ export function maxWireVersion(topologyOrServer?: Connection | Topology | Server
 
     if (
       topologyOrServer.description &&
-      'maxWireVersion' in topologyOrServer.description &&
+      "maxWireVersion" in topologyOrServer.description &&
       topologyOrServer.description.maxWireVersion != null
     ) {
       return topologyOrServer.description.maxWireVersion;
@@ -698,7 +702,7 @@ export function collationNotSupported(server: Server, cmd: Document): boolean {
 export function eachAsync<T = Document>(
   arr: T[],
   eachFn: (item: T, callback: (err?: AnyError) => void) => void,
-  callback: Callback
+  callback: Callback,
 ): void {
   arr = arr || [];
 
@@ -731,7 +735,7 @@ export function eachAsync<T = Document>(
 export function eachAsyncSeries<T = any>(
   arr: T[],
   eachFn: (item: T, callback: (err?: AnyError) => void) => void,
-  callback: Callback
+  callback: Callback,
 ): void {
   arr = arr || [];
 
@@ -767,7 +771,8 @@ export function arrayStrictEqual(arr: unknown[], arr2: unknown[]): boolean {
     return false;
   }
 
-  return arr.length === arr2.length && arr.every((elt, idx) => elt === arr2[idx]);
+  return arr.length === arr2.length &&
+    arr.every((elt, idx) => elt === arr2[idx]);
 }
 
 /** @internal */
@@ -800,7 +805,7 @@ interface StateTable {
 }
 interface ObjectWithState {
   s: { state: string };
-  emit(event: 'stateChanged', state: string, newState: string): void;
+  emit(event: "stateChanged", state: string, newState: string): void;
 }
 interface StateTransitionFunction {
   (target: ObjectWithState, newState: string): void;
@@ -813,16 +818,18 @@ export type EventEmitterWithState = {
 };
 
 /** @internal */
-export function makeStateMachine(stateTable: StateTable): StateTransitionFunction {
+export function makeStateMachine(
+  stateTable: StateTable,
+): StateTransitionFunction {
   return function stateTransition(target, newState) {
     const legalStates = stateTable[target.s.state];
     if (legalStates && legalStates.indexOf(newState) < 0) {
       throw new MongoRuntimeError(
-        `illegal state transition from [${target.s.state}] => [${newState}], allowed: [${legalStates}]`
+        `illegal state transition from [${target.s.state}] => [${newState}], allowed: [${legalStates}]`,
       );
     }
 
-    target.emit('stateChanged', target.s.state, newState);
+    target.emit("stateChanged", target.s.state, newState);
     target.s.state = newState;
   };
 }
@@ -835,7 +842,7 @@ export interface ClientMetadata {
   };
   os: {
     type: string;
-    name: NodeJS.Platform;
+    name: string;
     architecture: string;
     version: string;
   };
@@ -856,34 +863,35 @@ export interface ClientMetadataOptions {
   appName?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const NODE_DRIVER_VERSION = require('../package.json').version;
-
-export function makeClientMetadata(options?: ClientMetadataOptions): ClientMetadata {
+export function makeClientMetadata(
+  options?: ClientMetadataOptions,
+): ClientMetadata {
   options = options ?? {};
 
   const metadata: ClientMetadata = {
     driver: {
-      name: 'nodejs',
-      version: NODE_DRIVER_VERSION
+      name: "deno",
+      version: "0.0.0", // TODO
     },
     os: {
-      type: os.type(),
-      name: process.platform,
-      architecture: process.arch,
-      version: os.release()
+      type: Deno.build.os, // TODO
+      name: Deno.build.os, // TODO
+      architecture: Deno.build.arch,
+      version: Deno.build.vendor, // TODO,
     },
-    platform: `Node.js ${process.version}, ${os.endianness()} (unified)`
+    platform: `Deno ${Deno.version.deno} (unified)`, // TODO os endianness
   };
 
   // support optionally provided wrapping driver info
   if (options.driverInfo) {
     if (options.driverInfo.name) {
-      metadata.driver.name = `${metadata.driver.name}|${options.driverInfo.name}`;
+      metadata.driver.name =
+        `${metadata.driver.name}|${options.driverInfo.name}`;
     }
 
     if (options.driverInfo.version) {
-      metadata.version = `${metadata.driver.version}|${options.driverInfo.version}`;
+      metadata.version =
+        `${metadata.driver.version}|${options.driverInfo.version}`;
     }
 
     if (options.driverInfo.platform) {
@@ -892,10 +900,10 @@ export function makeClientMetadata(options?: ClientMetadataOptions): ClientMetad
   }
 
   if (options.appName) {
-    // MongoDB requires the appName not exceed a byte length of 128
-    const buffer = Buffer.from(options.appName);
+    // TODO: MongoDB requires the appName not exceed a byte length of 128
+    // const buffer = Buffer.from(options.appName);
     metadata.application = {
-      name: buffer.byteLength > 128 ? buffer.slice(0, 128).toString('utf8') : options.appName
+      name: options.appName,
     };
   }
 
@@ -903,15 +911,17 @@ export function makeClientMetadata(options?: ClientMetadataOptions): ClientMetad
 }
 
 /** @internal */
-export function now(): number {
+export function now(): number { // TODO
   const hrtime = process.hrtime();
   return Math.floor(hrtime[0] * 1000 + hrtime[1] / 1000000);
 }
 
 /** @internal */
 export function calculateDurationInMs(started: number): number {
-  if (typeof started !== 'number') {
-    throw new MongoInvalidArgumentError('Numeric value required to calculate duration');
+  if (typeof started !== "number") {
+    throw new MongoInvalidArgumentError(
+      "Numeric value required to calculate duration",
+    );
   }
 
   const elapsed = now() - started;
@@ -950,9 +960,9 @@ export interface InterruptibleAsyncInterval {
  */
 export function makeInterruptibleAsyncInterval(
   fn: (callback: Callback) => void,
-  options?: Partial<InterruptibleAsyncIntervalOptions>
+  options?: Partial<InterruptibleAsyncIntervalOptions>,
 ): InterruptibleAsyncInterval {
-  let timerId: NodeJS.Timeout | undefined;
+  let timerId: number | undefined;
   let lastCallTime: number;
   let lastWakeTime: number;
   let stopped = false;
@@ -960,8 +970,10 @@ export function makeInterruptibleAsyncInterval(
   options = options ?? {};
   const interval = options.interval || 1000;
   const minInterval = options.minInterval || 500;
-  const immediate = typeof options.immediate === 'boolean' ? options.immediate : false;
-  const clock = typeof options.clock === 'function' ? options.clock : now;
+  const immediate = typeof options.immediate === "boolean"
+    ? options.immediate
+    : false;
+  const clock = typeof options.clock === "function" ? options.clock : now;
 
   function wake() {
     const currentTime = clock();
@@ -1020,7 +1032,7 @@ export function makeInterruptibleAsyncInterval(
     lastWakeTime = 0;
     lastCallTime = clock();
 
-    fn(err => {
+    fn((err) => {
       if (err) throw err;
       reschedule(interval);
     });
@@ -1048,7 +1060,7 @@ export function hasAtomicOperators(doc: Document | Document[]): boolean {
   }
 
   const keys = Object.keys(doc);
-  return keys.length > 0 && keys[0][0] === '$';
+  return keys.length > 0 && keys[0][0] === "$";
 }
 
 /**
@@ -1058,9 +1070,13 @@ export function hasAtomicOperators(doc: Document | Document[]): boolean {
  */
 export function resolveOptions<T extends CommandOperationOptions>(
   parent: OperationParent | undefined,
-  options?: T
+  options?: T,
 ): T {
-  const result: T = Object.assign({}, options, resolveBSONOptions(options, parent));
+  const result: T = Object.assign(
+    {},
+    options,
+    resolveBSONOptions(options, parent),
+  );
 
   // Users cannot pass a readConcern/writeConcern to operations in a transaction
   const session = options?.session;
@@ -1070,13 +1086,15 @@ export function resolveOptions<T extends CommandOperationOptions>(
       result.readConcern = readConcern;
     }
 
-    const writeConcern = WriteConcern.fromOptions(options) ?? parent?.writeConcern;
+    const writeConcern = WriteConcern.fromOptions(options) ??
+      parent?.writeConcern;
     if (writeConcern) {
       result.writeConcern = writeConcern;
     }
   }
 
-  const readPreference = ReadPreference.fromOptions(options) ?? parent?.readPreference;
+  const readPreference = ReadPreference.fromOptions(options) ??
+    parent?.readPreference;
   if (readPreference) {
     result.readPreference = readPreference;
   }
@@ -1084,7 +1102,10 @@ export function resolveOptions<T extends CommandOperationOptions>(
   return result;
 }
 
-export function isSuperset(set: Set<any> | any[], subset: Set<any> | any[]): boolean {
+export function isSuperset(
+  set: Set<any> | any[],
+  subset: Set<any> | any[],
+): boolean {
   set = Array.isArray(set) ? new Set(set) : set;
   subset = Array.isArray(subset) ? new Set(subset) : subset;
   for (const elem of subset) {
@@ -1095,7 +1116,10 @@ export function isSuperset(set: Set<any> | any[], subset: Set<any> | any[]): boo
   return true;
 }
 
-export function setDifference(setA: Iterable<any>, setB: Iterable<any>): Set<any> {
+export function setDifference(
+  setA: Iterable<any>,
+  setB: Iterable<any>,
+): Set<any> {
   const difference = new Set(setA);
   for (const elem of setB) {
     difference.delete(elem);
@@ -1105,16 +1129,16 @@ export function setDifference(setA: Iterable<any>, setB: Iterable<any>): Set<any
 
 export function isRecord<T extends readonly string[]>(
   value: unknown,
-  requiredKeys: T
+  requiredKeys: T,
 ): value is Record<T[number], any>;
 export function isRecord(value: unknown): value is Record<string, any>;
 export function isRecord(
   value: unknown,
-  requiredKeys: string[] | undefined = undefined
+  requiredKeys: string[] | undefined = undefined,
 ): value is Record<string, any> {
   const toString = Object.prototype.toString;
   const hasOwnProperty = Object.prototype.hasOwnProperty;
-  const isObject = (v: unknown) => toString.call(v) === '[object Object]';
+  const isObject = (v: unknown) => toString.call(v) === "[object Object]";
   if (!isObject(value)) {
     return false;
   }
@@ -1126,7 +1150,7 @@ export function isRecord(
     }
 
     // Check to see if some method exists from the Object exists
-    if (!hasOwnProperty.call(ctor.prototype, 'isPrototypeOf')) {
+    if (!hasOwnProperty.call(ctor.prototype, "isPrototypeOf")) {
       return false;
     }
   }
@@ -1150,7 +1174,7 @@ export function deepCopy<T extends any>(value: T): T {
   if (value == null) {
     return value;
   } else if (Array.isArray(value)) {
-    return value.map(item => deepCopy(item)) as T;
+    return value.map((item) => deepCopy(item)) as T;
   } else if (isRecord(value)) {
     const res = {} as any;
     for (const key in value) {
@@ -1162,13 +1186,13 @@ export function deepCopy<T extends any>(value: T): T {
   const ctor = (value as any).constructor;
   if (ctor) {
     switch (ctor.name.toLowerCase()) {
-      case 'date':
+      case "date":
         return new ctor(Number(value));
-      case 'map':
+      case "map":
         return new Map(value as any) as T;
-      case 'set':
+      case "set":
         return new Set(value as any) as T;
-      case 'buffer':
+      case "buffer":
         return Buffer.from(value as Buffer) as T;
     }
   }
@@ -1177,9 +1201,9 @@ export function deepCopy<T extends any>(value: T): T {
 }
 
 /** @internal */
-const kBuffers = Symbol('buffers');
+const kBuffers = Symbol("buffers");
 /** @internal */
-const kLength = Symbol('length');
+const kLength = Symbol("length");
 
 /**
  * A pool of Buffers which allow you to read them as if they were one
@@ -1211,8 +1235,10 @@ export class BufferPool {
 
   /** Reads the requested number of bytes, optionally consuming them */
   read(size: number, consume = true): Buffer {
-    if (typeof size !== 'number' || size < 0) {
-      throw new MongoInvalidArgumentError('Argument "size" must be a non-negative number');
+    if (typeof size !== "number" || size < 0) {
+      throw new MongoInvalidArgumentError(
+        'Argument "size" must be a non-negative number',
+      );
     }
 
     if (size > this[kLength]) {
@@ -1229,18 +1255,14 @@ export class BufferPool {
         this[kBuffers] = [];
         this[kLength] = 0;
       }
-    }
-
-    // size is within first buffer, no need to concat
+    } // size is within first buffer, no need to concat
     else if (size <= this[kBuffers][0].length) {
       result = this[kBuffers][0].slice(0, size);
       if (consume) {
         this[kBuffers][0] = this[kBuffers][0].slice(size);
         this[kLength] -= size;
       }
-    }
-
-    // size is beyond first buffer, need to track and copy
+    } // size is beyond first buffer, need to track and copy
     else {
       result = Buffer.allocUnsafe(size);
 
@@ -1253,7 +1275,12 @@ export class BufferPool {
           bytesCopied = this[kBuffers][idx].copy(result, offset, 0);
           offset += bytesCopied;
         } else {
-          bytesCopied = this[kBuffers][idx].copy(result, offset, 0, bytesToCopy);
+          bytesCopied = this[kBuffers][idx].copy(
+            result,
+            offset,
+            0,
+            bytesToCopy,
+          );
           if (consume) {
             this[kBuffers][idx] = this[kBuffers][idx].slice(bytesCopied);
           }
@@ -1285,36 +1312,38 @@ export class HostAddress {
   isIPv6;
 
   constructor(hostString: string) {
-    const escapedHost = hostString.split(' ').join('%20'); // escape spaces, for socket path hosts
+    const escapedHost = hostString.split(" ").join("%20"); // escape spaces, for socket path hosts
     const { hostname, port } = new URL(`mongodb://${escapedHost}`);
 
-    if (hostname.endsWith('.sock')) {
+    if (hostname.endsWith(".sock")) {
       // heuristically determine if we're working with a domain socket
       this.socketPath = decodeURIComponent(hostname);
-    } else if (typeof hostname === 'string') {
+    } else if (typeof hostname === "string") {
       this.isIPv6 = false;
 
       let normalized = decodeURIComponent(hostname).toLowerCase();
-      if (normalized.startsWith('[') && normalized.endsWith(']')) {
+      if (normalized.startsWith("[") && normalized.endsWith("]")) {
         this.isIPv6 = true;
         normalized = normalized.substring(1, hostname.length - 1);
       }
 
       this.host = normalized.toLowerCase();
 
-      if (typeof port === 'number') {
+      if (typeof port === "number") {
         this.port = port;
-      } else if (typeof port === 'string' && port !== '') {
+      } else if (typeof port === "string" && port !== "") {
         this.port = Number.parseInt(port, 10);
       } else {
         this.port = 27017;
       }
 
       if (this.port === 0) {
-        throw new MongoParseError('Invalid port (zero) with hostname');
+        throw new MongoParseError("Invalid port (zero) with hostname");
       }
     } else {
-      throw new MongoInvalidArgumentError('Either socketPath or host must be defined.');
+      throw new MongoInvalidArgumentError(
+        "Either socketPath or host must be defined.",
+      );
     }
     Object.freeze(this);
   }
@@ -1323,7 +1352,7 @@ export class HostAddress {
    * @param ipv6Brackets - optionally request ipv6 bracket notation required for connection strings
    */
   toString(ipv6Brackets = false): string {
-    if (typeof this.host === 'string') {
+    if (typeof this.host === "string") {
       if (this.isIPv6 && ipv6Brackets) {
         return `[${this.host}]:${this.port}`;
       }
@@ -1341,7 +1370,7 @@ export const DEFAULT_PK_FACTORY = {
   // We prefer not to rely on ObjectId having a createPk method
   createPk(): ObjectId {
     return new ObjectId();
-  }
+  },
 };
 
 /**
@@ -1355,7 +1384,7 @@ export const DEFAULT_PK_FACTORY = {
  * })
  * ```
  */
-export const MONGODB_WARNING_CODE = 'MONGODB DRIVER' as const;
+export const MONGODB_WARNING_CODE = "MONGODB DRIVER" as const;
 
 /** @internal */
 export function emitWarning(message: string): void {
@@ -1380,7 +1409,7 @@ export function emitWarningOnce(message: string): void {
  * Takes a JS object and joins the values into a string separated by ', '
  */
 export function enumToString(en: Record<string, unknown>): string {
-  return Object.values(en).join(', ');
+  return Object.values(en).join(", ");
 }
 
 /**
@@ -1402,6 +1431,8 @@ export function parsePackageVersion({ version }: { version: string }): {
   minor: number;
   patch: number;
 } {
-  const [major, minor, patch] = version.split('.').map((n: string) => Number.parseInt(n, 10));
+  const [major, minor, patch] = version.split(".").map((n: string) =>
+    Number.parseInt(n, 10)
+  );
   return { major, minor, patch };
 }

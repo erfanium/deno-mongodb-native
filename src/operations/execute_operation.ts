@@ -1,4 +1,4 @@
-import { ReadPreference } from '../read_preference';
+import { ReadPreference } from '../read_preference.ts';
 import {
   MongoError,
   isRetryableError,
@@ -9,14 +9,14 @@ import {
   MongoServerError,
   MongoExpiredSessionError,
   MongoTransactionError
-} from '../error';
-import { Aspect, AbstractOperation } from './operation';
-import { maxWireVersion, maybePromise, Callback } from '../utils';
-import type { Server } from '../sdam/server';
-import type { Topology } from '../sdam/topology';
-import type { ClientSession } from '../sessions';
-import type { Document } from '../bson';
-import { supportsRetryableWrites } from '../utils';
+} from '../error.ts';
+import { Aspect, AbstractOperation } from './operation.ts';
+import { maxWireVersion, maybePromise, Callback } from '../utils.ts';
+import type { Server } from '../sdam/server.ts';
+import type { Topology } from '../sdam/topology.ts';
+import type { ClientSession } from '../sessions.ts';
+import type { Document } from '../bson.ts';
+import { supportsRetryableWrites } from '../utils.ts';
 
 const MMAPv1_RETRY_WRITES_ERROR_CODE = MONGODB_ERROR_CODES.IllegalOperation;
 const MMAPv1_RETRY_WRITES_ERROR_MESSAGE =

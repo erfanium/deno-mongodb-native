@@ -1,12 +1,12 @@
 import * as crypto from 'crypto';
-import { Aspect, defineAspects } from './operation';
-import { CommandOperation, CommandOperationOptions } from './command';
-import { MongoInvalidArgumentError } from '../error';
-import { Callback, emitWarningOnce, getTopology } from '../utils';
-import type { Document } from '../bson';
-import type { Server } from '../sdam/server';
-import type { Db } from '../db';
-import type { ClientSession } from '../sessions';
+import { Aspect, defineAspects } from './operation.ts';
+import { CommandOperation, CommandOperationOptions } from './command.ts';
+import { MongoInvalidArgumentError } from '../error.ts';
+import { Callback, emitWarningOnce, getTopology } from '../utils.ts';
+import type { Document } from '../bson.ts';
+import type { Server } from '../sdam/server.ts';
+import type { Db } from '../db.ts';
+import type { ClientSession } from '../sessions.ts';
 
 /** @public */
 export interface RoleSpecification {

@@ -1,9 +1,9 @@
-import { PromiseProvider } from './promise_provider';
-import { Binary, Long, Timestamp, Document } from './bson';
-import { ReadPreference } from './read_preference';
-import { isTransactionCommand, TxnState, Transaction, TransactionOptions } from './transactions';
-import { _advanceClusterTime, ClusterTime, TopologyType } from './sdam/common';
-import { isSharded } from './cmap/wire_protocol/shared';
+import { PromiseProvider } from './promise_provider.ts';
+import { Binary, Long, Timestamp, Document } from './bson.ts';
+import { ReadPreference } from './read_preference.ts';
+import { isTransactionCommand, TxnState, Transaction, TransactionOptions } from './transactions.ts';
+import { _advanceClusterTime, ClusterTime, TopologyType } from './sdam/common.ts';
+import { isSharded } from './cmap/wire_protocol/shared.ts';
 import {
   MongoError,
   MongoInvalidArgumentError,
@@ -19,7 +19,7 @@ import {
   MongoExpiredSessionError,
   MongoTransactionError,
   MongoRuntimeError
-} from './error';
+} from './error.ts';
 import {
   now,
   calculateDurationInMs,
@@ -28,18 +28,18 @@ import {
   uuidV4,
   maxWireVersion,
   maybePromise
-} from './utils';
-import type { Topology } from './sdam/topology';
-import type { MongoOptions } from './mongo_client';
-import { executeOperation } from './operations/execute_operation';
-import { RunAdminCommandOperation } from './operations/run_command';
-import type { AbstractCursor } from './cursor/abstract_cursor';
-import type { CommandOptions } from './cmap/connection';
-import { Connection } from './cmap/connection';
-import { ConnectionPoolMetrics } from './cmap/metrics';
-import type { WriteConcern } from './write_concern';
-import { TypedEventEmitter } from './mongo_types';
-import { ReadConcernLevel } from './read_concern';
+} from './utils.ts';
+import type { Topology } from './sdam/topology.ts';
+import type { MongoOptions } from './mongo_client.ts';
+import { executeOperation } from './operations/execute_operation.ts';
+import { RunAdminCommandOperation } from './operations/run_command.ts';
+import type { AbstractCursor } from './cursor/abstract_cursor.ts';
+import type { CommandOptions } from './cmap/connection.ts';
+import { Connection } from './cmap/connection.ts';
+import { ConnectionPoolMetrics } from './cmap/metrics.ts';
+import type { WriteConcern } from './write_concern.ts';
+import { TypedEventEmitter } from './mongo_types.ts';
+import { ReadConcernLevel } from './read_concern.ts';
 
 const minWireVersionForShardedTransactions = 8;
 

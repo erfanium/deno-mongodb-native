@@ -1,55 +1,65 @@
-import Denque = require('denque');
-import { APM_EVENTS, Connection, ConnectionEvents, ConnectionOptions } from './connection';
-import type { ObjectId } from 'bson';
-import { Logger } from '../logger';
-import { ConnectionPoolMetrics } from './metrics';
-import { connect } from './connect';
-import { eachAsync, makeCounter, Callback } from '../utils';
-import { MongoError, MongoInvalidArgumentError, MongoRuntimeError } from '../error';
-import { PoolClosedError, WaitQueueTimeoutError } from './errors';
+import Denque = require("denque");
 import {
-  ConnectionPoolCreatedEvent,
-  ConnectionPoolClosedEvent,
-  ConnectionCreatedEvent,
-  ConnectionReadyEvent,
-  ConnectionClosedEvent,
-  ConnectionCheckOutStartedEvent,
-  ConnectionCheckOutFailedEvent,
-  ConnectionCheckedOutEvent,
+  APM_EVENTS,
+  Connection,
+  ConnectionEvents,
+  ConnectionOptions,
+} from "./connection.ts";
+import type { ObjectId } from "bson";
+import { Logger } from "../logger.ts";
+import { ConnectionPoolMetrics } from "./metrics.ts";
+import { connect } from "./connect.ts";
+import { Callback, eachAsync, makeCounter } from "../utils.ts";
+import {
+  MongoError,
+  MongoInvalidArgumentError,
+  MongoRuntimeError,
+} from "../error.ts";
+import { PoolClosedError, WaitQueueTimeoutError } from "./errors.ts";
+import {
   ConnectionCheckedInEvent,
-  ConnectionPoolClearedEvent
-} from './connection_pool_events';
-import { CancellationToken, TypedEventEmitter } from '../mongo_types';
+  ConnectionCheckedOutEvent,
+  ConnectionCheckOutFailedEvent,
+  ConnectionCheckOutStartedEvent,
+  ConnectionClosedEvent,
+  ConnectionCreatedEvent,
+  ConnectionPoolClearedEvent,
+  ConnectionPoolClosedEvent,
+  ConnectionPoolCreatedEvent,
+  ConnectionReadyEvent,
+} from "./connection_pool_events.ts";
+import { CancellationToken, TypedEventEmitter } from "../mongo_types.ts";
 
 /** @internal */
-const kLogger = Symbol('logger');
+const kLogger = Symbol("logger");
 /** @internal */
-const kConnections = Symbol('connections');
+const kConnections = Symbol("connections");
 /** @internal */
-const kPermits = Symbol('permits');
+const kPermits = Symbol("permits");
 /** @internal */
-const kMinPoolSizeTimer = Symbol('minPoolSizeTimer');
+const kMinPoolSizeTimer = Symbol("minPoolSizeTimer");
 /** @internal */
-const kGeneration = Symbol('generation');
+const kGeneration = Symbol("generation");
 /** @internal */
-const kServiceGenerations = Symbol('serviceGenerations');
+const kServiceGenerations = Symbol("serviceGenerations");
 /** @internal */
-const kConnectionCounter = Symbol('connectionCounter');
+const kConnectionCounter = Symbol("connectionCounter");
 /** @internal */
-const kCancellationToken = Symbol('cancellationToken');
+const kCancellationToken = Symbol("cancellationToken");
 /** @internal */
-const kWaitQueue = Symbol('waitQueue');
+const kWaitQueue = Symbol("waitQueue");
 /** @internal */
-const kCancelled = Symbol('cancelled');
+const kCancelled = Symbol("cancelled");
 /** @internal */
-const kMetrics = Symbol('metrics');
+const kMetrics = Symbol("metrics");
 /** @internal */
-const kCheckedOut = Symbol('checkedOut');
+const kCheckedOut = Symbol("checkedOut");
 /** @internal */
-const kProcessingWaitQueue = Symbol('processingWaitQueue');
+const kProcessingWaitQueue = Symbol("processingWaitQueue");
 
 /** @public */
-export interface ConnectionPoolOptions extends Omit<ConnectionOptions, 'id' | 'generation'> {
+export interface ConnectionPoolOptions
+  extends Omit<ConnectionOptions, "id" | "generation"> {
   /** The maximum number of connections that may be associated with a pool at a given time. This includes in use and available connections. */
   maxPoolSize: number;
   /** The minimum number of connections that MUST exist at any moment in a single connection pool. */
@@ -65,7 +75,7 @@ export interface ConnectionPoolOptions extends Omit<ConnectionOptions, 'id' | 'g
 /** @internal */
 export interface WaitQueueMember {
   callback: Callback<Connection>;
-  timer?: NodeJS.Timeout;
+  timer?: number;
   [kCancelled]?: boolean;
 }
 
@@ -86,7 +96,7 @@ export type ConnectionPoolEvents = {
   connectionCheckOutFailed(event: ConnectionCheckOutFailedEvent): void;
   connectionCheckedOut(event: ConnectionCheckedOutEvent): void;
   connectionCheckedIn(event: ConnectionCheckedInEvent): void;
-} & Omit<ConnectionEvents, 'close' | 'message'>;
+} & Omit<ConnectionEvents, "close" | "message">;
 
 /**
  * A pool of connections which dynamically resizes, and emit events related to pool activity
@@ -105,7 +115,7 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
    */
   [kPermits]: number;
   /** @internal */
-  [kMinPoolSizeTimer]?: NodeJS.Timeout;
+  [kMinPoolSizeTimer]?: number;
   /**
    * An integer representing the SDAM generation of the pool
    * @internal
@@ -132,52 +142,54 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
    * Emitted when the connection pool is created.
    * @event
    */
-  static readonly CONNECTION_POOL_CREATED = 'connectionPoolCreated' as const;
+  static readonly CONNECTION_POOL_CREATED = "connectionPoolCreated" as const;
   /**
    * Emitted once when the connection pool is closed
    * @event
    */
-  static readonly CONNECTION_POOL_CLOSED = 'connectionPoolClosed' as const;
+  static readonly CONNECTION_POOL_CLOSED = "connectionPoolClosed" as const;
   /**
    * Emitted each time the connection pool is cleared and it's generation incremented
    * @event
    */
-  static readonly CONNECTION_POOL_CLEARED = 'connectionPoolCleared' as const;
+  static readonly CONNECTION_POOL_CLEARED = "connectionPoolCleared" as const;
   /**
    * Emitted when a connection is created.
    * @event
    */
-  static readonly CONNECTION_CREATED = 'connectionCreated' as const;
+  static readonly CONNECTION_CREATED = "connectionCreated" as const;
   /**
    * Emitted when a connection becomes established, and is ready to use
    * @event
    */
-  static readonly CONNECTION_READY = 'connectionReady' as const;
+  static readonly CONNECTION_READY = "connectionReady" as const;
   /**
    * Emitted when a connection is closed
    * @event
    */
-  static readonly CONNECTION_CLOSED = 'connectionClosed' as const;
+  static readonly CONNECTION_CLOSED = "connectionClosed" as const;
   /**
    * Emitted when an attempt to check out a connection begins
    * @event
    */
-  static readonly CONNECTION_CHECK_OUT_STARTED = 'connectionCheckOutStarted' as const;
+  static readonly CONNECTION_CHECK_OUT_STARTED =
+    "connectionCheckOutStarted" as const;
   /**
    * Emitted when an attempt to check out a connection fails
    * @event
    */
-  static readonly CONNECTION_CHECK_OUT_FAILED = 'connectionCheckOutFailed' as const;
+  static readonly CONNECTION_CHECK_OUT_FAILED =
+    "connectionCheckOutFailed" as const;
   /**
    * Emitted each time a connection is successfully checked out of the connection pool
    * @event
    */
-  static readonly CONNECTION_CHECKED_OUT = 'connectionCheckedOut' as const;
+  static readonly CONNECTION_CHECKED_OUT = "connectionCheckedOut" as const;
   /**
    * Emitted each time a connection is successfully checked into the connection pool
    * @event
    */
-  static readonly CONNECTION_CHECKED_IN = 'connectionCheckedIn' as const;
+  static readonly CONNECTION_CHECKED_IN = "connectionCheckedIn" as const;
 
   /** @internal */
   constructor(options: ConnectionPoolOptions) {
@@ -192,16 +204,16 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
       maxIdleTimeMS: options.maxIdleTimeMS ?? 0,
       waitQueueTimeoutMS: options.waitQueueTimeoutMS ?? 0,
       autoEncrypter: options.autoEncrypter,
-      metadata: options.metadata
+      metadata: options.metadata,
     });
 
     if (this.options.minPoolSize > this.options.maxPoolSize) {
       throw new MongoInvalidArgumentError(
-        'Connection pool minimum size must not be greater than maximum pool size'
+        "Connection pool minimum size must not be greater than maximum pool size",
       );
     }
 
-    this[kLogger] = new Logger('ConnectionPool');
+    this[kLogger] = new Logger("ConnectionPool");
     this[kConnections] = new Denque();
     this[kPermits] = this.options.maxPoolSize;
     this[kMinPoolSizeTimer] = undefined;
@@ -216,7 +228,10 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
     this[kProcessingWaitQueue] = false;
 
     process.nextTick(() => {
-      this.emit(ConnectionPool.CONNECTION_POOL_CREATED, new ConnectionPoolCreatedEvent(this));
+      this.emit(
+        ConnectionPool.CONNECTION_POOL_CREATED,
+        new ConnectionPoolCreatedEvent(this),
+      );
       ensureMinPoolSize(this);
     });
   }
@@ -233,7 +248,8 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
 
   /** An integer expressing how many total connections (active + in use) the pool currently has */
   get totalConnectionCount(): number {
-    return this[kConnections].length + (this.options.maxPoolSize - this[kPermits]);
+    return this[kConnections].length +
+      (this.options.maxPoolSize - this[kPermits]);
   }
 
   /** An integer expressing how many connections are currently available in the pool. */
@@ -272,13 +288,13 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
   checkOut(callback: Callback<Connection>): void {
     this.emit(
       ConnectionPool.CONNECTION_CHECK_OUT_STARTED,
-      new ConnectionCheckOutStartedEvent(this)
+      new ConnectionCheckOutStartedEvent(this),
     );
 
     if (this.closed) {
       this.emit(
         ConnectionPool.CONNECTION_CHECK_OUT_FAILED,
-        new ConnectionCheckOutFailedEvent(this, 'poolClosed')
+        new ConnectionCheckOutFailedEvent(this, "poolClosed"),
       );
       callback(new PoolClosedError(this));
       return;
@@ -293,15 +309,15 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
 
         this.emit(
           ConnectionPool.CONNECTION_CHECK_OUT_FAILED,
-          new ConnectionCheckOutFailedEvent(this, 'timeout')
+          new ConnectionCheckOutFailedEvent(this, "timeout"),
         );
         waitQueueMember.callback(
           new WaitQueueTimeoutError(
             this.loadBalanced
               ? this.waitQueueErrorMetrics()
-              : 'Timed out while checking out a connection from connection pool',
-            this.address
-          )
+              : "Timed out while checking out a connection from connection pool",
+            this.address,
+          ),
         );
       }, waitQueueTimeoutMS);
     }
@@ -327,10 +343,17 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
     }
 
     this[kCheckedOut] = this[kCheckedOut] - 1;
-    this.emit(ConnectionPool.CONNECTION_CHECKED_IN, new ConnectionCheckedInEvent(this, connection));
+    this.emit(
+      ConnectionPool.CONNECTION_CHECKED_IN,
+      new ConnectionCheckedInEvent(this, connection),
+    );
 
     if (willDestroy) {
-      const reason = connection.closed ? 'error' : poolClosed ? 'poolClosed' : 'stale';
+      const reason = connection.closed
+        ? "error"
+        : poolClosed
+        ? "poolClosed"
+        : "stale";
       destroyConnection(this, connection, reason);
     }
 
@@ -351,7 +374,9 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
       // always be there but typescript needs the check.
       if (generation == null) {
         // TODO(NODE-3483)
-        throw new MongoRuntimeError('Service generations are required in load balancer mode.');
+        throw new MongoRuntimeError(
+          "Service generations are required in load balancer mode.",
+        );
       } else {
         // Increment the generation for the service id.
         this.serviceGenerations.set(sid, generation + 1);
@@ -360,7 +385,10 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
       this[kGeneration] += 1;
     }
 
-    this.emit('connectionPoolCleared', new ConnectionPoolClearedEvent(this, serviceId));
+    this.emit(
+      "connectionPoolCleared",
+      new ConnectionPoolClearedEvent(this, serviceId),
+    );
   }
 
   /** Close the pool */
@@ -369,7 +397,7 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
   close(_options?: CloseOptions | Callback<void>, _cb?: Callback<void>): void {
     let options = _options as CloseOptions;
     const callback = (_cb ?? _options) as Callback<void>;
-    if (typeof options === 'function') {
+    if (typeof options === "function") {
       options = {};
     }
 
@@ -379,7 +407,7 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
     }
 
     // immediately cancel any in-flight connections
-    this[kCancellationToken].emit('cancel');
+    this[kCancellationToken].emit("cancel");
 
     // drain the wait queue
     while (this.waitQueueSize) {
@@ -390,7 +418,9 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
         }
         if (!waitQueueMember[kCancelled]) {
           // TODO(NODE-3483): Replace with MongoConnectionPoolClosedError
-          waitQueueMember.callback(new MongoRuntimeError('Connection pool closed'));
+          waitQueueMember.callback(
+            new MongoRuntimeError("Connection pool closed"),
+          );
         }
       }
     }
@@ -402,7 +432,7 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
     }
 
     // end the connection counter
-    if (typeof this[kConnectionCounter].return === 'function') {
+    if (typeof this[kConnectionCounter].return === "function") {
       this[kConnectionCounter].return(undefined);
     }
 
@@ -413,15 +443,18 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
       (conn, cb) => {
         this.emit(
           ConnectionPool.CONNECTION_CLOSED,
-          new ConnectionClosedEvent(this, conn, 'poolClosed')
+          new ConnectionClosedEvent(this, conn, "poolClosed"),
         );
         conn.destroy(options, cb);
       },
-      err => {
+      (err) => {
         this[kConnections].clear();
-        this.emit(ConnectionPool.CONNECTION_POOL_CLOSED, new ConnectionPoolClosedEvent(this));
+        this.emit(
+          ConnectionPool.CONNECTION_POOL_CLOSED,
+          new ConnectionPoolClosedEvent(this),
+        );
         callback(err);
-      }
+      },
     );
   }
 
@@ -442,12 +475,12 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
   withConnection(
     conn: Connection | undefined,
     fn: WithConnectionCallback,
-    callback?: Callback<Connection>
+    callback?: Callback<Connection>,
   ): void {
     if (conn) {
       // use the provided connection, and do _not_ check it in after execution
       fn(undefined, conn, (fnErr, result) => {
-        if (typeof callback === 'function') {
+        if (typeof callback === "function") {
           if (fnErr) {
             callback(fnErr);
           } else {
@@ -462,7 +495,7 @@ export class ConnectionPool extends TypedEventEmitter<ConnectionPoolEvents> {
     this.checkOut((err, conn) => {
       // don't callback with `err` here, we might want to act upon it inside `fn`
       fn(err as MongoError, conn, (fnErr, result) => {
-        if (typeof callback === 'function') {
+        if (typeof callback === "function") {
           if (fnErr) {
             callback(fnErr);
           } else {
@@ -503,23 +536,29 @@ function connectionIsStale(pool: ConnectionPool, connection: Connection) {
 }
 
 function connectionIsIdle(pool: ConnectionPool, connection: Connection) {
-  return !!(pool.options.maxIdleTimeMS && connection.idleTime > pool.options.maxIdleTimeMS);
+  return !!(pool.options.maxIdleTimeMS &&
+    connection.idleTime > pool.options.maxIdleTimeMS);
 }
 
-function createConnection(pool: ConnectionPool, callback?: Callback<Connection>) {
+function createConnection(
+  pool: ConnectionPool,
+  callback?: Callback<Connection>,
+) {
   const connectOptions: ConnectionOptions = {
     ...pool.options,
     id: pool[kConnectionCounter].next().value,
     generation: pool[kGeneration],
-    cancellationToken: pool[kCancellationToken]
+    cancellationToken: pool[kCancellationToken],
   };
 
   pool[kPermits]--;
   connect(connectOptions, (err, connection) => {
     if (err || !connection) {
       pool[kPermits]++;
-      pool[kLogger].debug(`connection attempt failed with error [${JSON.stringify(err)}]`);
-      if (typeof callback === 'function') {
+      pool[kLogger].debug(
+        `connection attempt failed with error [${JSON.stringify(err)}]`,
+      );
+      if (typeof callback === "function") {
         callback(err);
       }
 
@@ -537,11 +576,20 @@ function createConnection(pool: ConnectionPool, callback?: Callback<Connection>)
       connection.on(event, (e: any) => pool.emit(event, e));
     }
 
-    pool.emit(ConnectionPool.CONNECTION_CREATED, new ConnectionCreatedEvent(pool, connection));
+    pool.emit(
+      ConnectionPool.CONNECTION_CREATED,
+      new ConnectionCreatedEvent(pool, connection),
+    );
 
     if (pool.loadBalanced) {
-      connection.on(Connection.PINNED, pinType => pool[kMetrics].markPinned(pinType));
-      connection.on(Connection.UNPINNED, pinType => pool[kMetrics].markUnpinned(pinType));
+      connection.on(
+        Connection.PINNED,
+        (pinType) => pool[kMetrics].markPinned(pinType),
+      );
+      connection.on(
+        Connection.UNPINNED,
+        (pinType) => pool[kMetrics].markUnpinned(pinType),
+      );
 
       const serviceId = connection.serviceId;
       if (serviceId) {
@@ -557,10 +605,13 @@ function createConnection(pool: ConnectionPool, callback?: Callback<Connection>)
     }
 
     connection.markAvailable();
-    pool.emit(ConnectionPool.CONNECTION_READY, new ConnectionReadyEvent(pool, connection));
+    pool.emit(
+      ConnectionPool.CONNECTION_READY,
+      new ConnectionReadyEvent(pool, connection),
+    );
 
     // if a callback has been provided, check out the connection immediately
-    if (typeof callback === 'function') {
+    if (typeof callback === "function") {
       callback(undefined, connection);
       return;
     }
@@ -571,8 +622,15 @@ function createConnection(pool: ConnectionPool, callback?: Callback<Connection>)
   });
 }
 
-function destroyConnection(pool: ConnectionPool, connection: Connection, reason: string) {
-  pool.emit(ConnectionPool.CONNECTION_CLOSED, new ConnectionClosedEvent(pool, connection, reason));
+function destroyConnection(
+  pool: ConnectionPool,
+  connection: Connection,
+  reason: string,
+) {
+  pool.emit(
+    ConnectionPool.CONNECTION_CLOSED,
+    new ConnectionClosedEvent(pool, connection, reason),
+  );
 
   // allow more connections to be created
   pool[kPermits]++;
@@ -613,7 +671,7 @@ function processWaitQueue(pool: ConnectionPool) {
     if (!isStale && !isIdle && !connection.closed) {
       pool.emit(
         ConnectionPool.CONNECTION_CHECKED_OUT,
-        new ConnectionCheckedOutEvent(pool, connection)
+        new ConnectionCheckedOutEvent(pool, connection),
       );
       if (waitQueueMember.timer) {
         clearTimeout(waitQueueMember.timer);
@@ -622,13 +680,16 @@ function processWaitQueue(pool: ConnectionPool) {
       pool[kWaitQueue].shift();
       waitQueueMember.callback(undefined, connection);
     } else {
-      const reason = connection.closed ? 'error' : isStale ? 'stale' : 'idle';
+      const reason = connection.closed ? "error" : isStale ? "stale" : "idle";
       destroyConnection(pool, connection, reason);
     }
   }
 
   const maxPoolSize = pool.options.maxPoolSize;
-  if (pool.waitQueueSize && (maxPoolSize <= 0 || pool.totalConnectionCount < maxPoolSize)) {
+  if (
+    pool.waitQueueSize &&
+    (maxPoolSize <= 0 || pool.totalConnectionCount < maxPoolSize)
+  ) {
     createConnection(pool, (err, connection) => {
       const waitQueueMember = pool[kWaitQueue].shift();
       if (!waitQueueMember || waitQueueMember[kCancelled]) {
@@ -643,12 +704,12 @@ function processWaitQueue(pool: ConnectionPool) {
       if (err) {
         pool.emit(
           ConnectionPool.CONNECTION_CHECK_OUT_FAILED,
-          new ConnectionCheckOutFailedEvent(pool, err)
+          new ConnectionCheckOutFailedEvent(pool, err),
         );
       } else if (connection) {
         pool.emit(
           ConnectionPool.CONNECTION_CHECKED_OUT,
-          new ConnectionCheckedOutEvent(pool, connection)
+          new ConnectionCheckedOutEvent(pool, connection),
         );
       }
 
@@ -674,7 +735,7 @@ export const CMAP_EVENTS = [
   ConnectionPool.CONNECTION_CHECK_OUT_FAILED,
   ConnectionPool.CONNECTION_CHECKED_OUT,
   ConnectionPool.CONNECTION_CHECKED_IN,
-  ConnectionPool.CONNECTION_POOL_CLEARED
+  ConnectionPool.CONNECTION_POOL_CLEARED,
 ] as const;
 
 /**
@@ -688,5 +749,5 @@ export const CMAP_EVENTS = [
 export type WithConnectionCallback = (
   error: MongoError | undefined,
   connection: Connection | undefined,
-  callback: Callback<Connection>
+  callback: Callback<Connection>,
 ) => void;

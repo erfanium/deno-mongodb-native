@@ -1,8 +1,8 @@
-import { arrayStrictEqual, errorStrictEqual, now, HostAddress } from '../utils';
-import { ServerType } from './common';
-import { ObjectId, Long, Document } from '../bson';
-import type { ClusterTime } from './common';
-import type { MongoError } from '../error';
+import { arrayStrictEqual, errorStrictEqual, now, HostAddress } from '../utils.ts';
+import { ServerType } from './common.ts';
+import { ObjectId, Long, Document } from '../bson.ts';
+import type { ClusterTime } from './common.ts';
+import type { MongoError } from '../error.ts';
 
 const WRITABLE_SERVER_TYPES = new Set<ServerType>([
   ServerType.RSPrimary,

@@ -6,8 +6,8 @@ import {
   MongoRuntimeError,
   MongoAPIError,
   MongoChangeStreamError
-} from './error';
-import { AggregateOperation, AggregateOptions } from './operations/aggregate';
+} from './error.ts';
+import { AggregateOperation, AggregateOptions } from './operations/aggregate.ts';
 import {
   maxWireVersion,
   calculateDurationInMs,
@@ -16,24 +16,24 @@ import {
   MongoDBNamespace,
   Callback,
   getTopology
-} from './utils';
-import type { ReadPreference } from './read_preference';
-import type { Timestamp, Document } from './bson';
-import type { Topology } from './sdam/topology';
-import type { OperationParent, CollationOptions } from './operations/command';
-import { MongoClient } from './mongo_client';
-import { Db } from './db';
-import { Collection } from './collection';
+} from './utils.ts';
+import type { ReadPreference } from './read_preference.ts';
+import type { Timestamp, Document } from './bson.ts';
+import type { Topology } from './sdam/topology.ts';
+import type { OperationParent, CollationOptions } from './operations/command.ts';
+import { MongoClient } from './mongo_client.ts';
+import { Db } from './db.ts';
+import { Collection } from './collection.ts';
 import type { Readable } from 'stream';
 import {
   AbstractCursor,
   AbstractCursorEvents,
   AbstractCursorOptions,
   CursorStreamOptions
-} from './cursor/abstract_cursor';
-import type { ClientSession } from './sessions';
-import { executeOperation, ExecutionResult } from './operations/execute_operation';
-import { InferIdType, Nullable, TypedEventEmitter } from './mongo_types';
+} from './cursor/abstract_cursor.ts';
+import type { ClientSession } from './sessions.ts';
+import { executeOperation, ExecutionResult } from './operations/execute_operation.ts';
+import { InferIdType, Nullable, TypedEventEmitter } from './mongo_types.ts';
 
 /** @internal */
 const kResumeQueue = Symbol('resumeQueue');

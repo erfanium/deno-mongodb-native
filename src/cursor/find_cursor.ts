@@ -1,17 +1,17 @@
-import type { Document } from '../bson';
-import { MongoInvalidArgumentError, MongoTailableCursorError } from '../error';
-import type { ExplainVerbosityLike } from '../explain';
-import { CountOperation, CountOptions } from '../operations/count';
-import { executeOperation, ExecutionResult } from '../operations/execute_operation';
-import { FindOperation, FindOptions } from '../operations/find';
-import { mergeOptions } from '../utils';
-import type { Hint } from '../operations/operation';
-import type { CollationOptions } from '../operations/command';
-import type { Topology } from '../sdam/topology';
-import type { ClientSession } from '../sessions';
-import { formatSort, Sort, SortDirection } from '../sort';
-import type { Callback, MongoDBNamespace } from '../utils';
-import { AbstractCursor, assertUninitialized } from './abstract_cursor';
+import type { Document } from '../bson.ts';
+import { MongoInvalidArgumentError, MongoTailableCursorError } from '../error.ts';
+import type { ExplainVerbosityLike } from '../explain.ts';
+import { CountOperation, CountOptions } from '../operations/count.ts';
+import { executeOperation, ExecutionResult } from '../operations/execute_operation.ts';
+import { FindOperation, FindOptions } from '../operations/find.ts';
+import { mergeOptions } from '../utils.ts';
+import type { Hint } from '../operations/operation.ts';
+import type { CollationOptions } from '../operations/command.ts';
+import type { Topology } from '../sdam/topology.ts';
+import type { ClientSession } from '../sessions.ts';
+import { formatSort, Sort, SortDirection } from '../sort.ts';
+import type { Callback, MongoDBNamespace } from '../utils.ts';
+import { AbstractCursor, assertUninitialized } from './abstract_cursor.ts';
 
 /** @internal */
 const kFilter = Symbol('filter');

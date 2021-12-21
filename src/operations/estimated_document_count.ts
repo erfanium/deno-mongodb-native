@@ -1,11 +1,11 @@
-import { Aspect, defineAspects } from './operation';
-import { CommandOperation, CommandOperationOptions } from './command';
-import { Callback, maxWireVersion } from '../utils';
-import type { Document } from '../bson';
-import type { Server } from '../sdam/server';
-import type { Collection } from '../collection';
-import type { ClientSession } from '../sessions';
-import type { MongoServerError } from '../error';
+import { Aspect, defineAspects } from './operation.ts';
+import { CommandOperation, CommandOperationOptions } from './command.ts';
+import { Callback, maxWireVersion } from '../utils.ts';
+import type { Document } from '../bson.ts';
+import type { Server } from '../sdam/server.ts';
+import type { Collection } from '../collection.ts';
+import type { ClientSession } from '../sessions.ts';
+import type { MongoServerError } from '../error.ts';
 
 /** @public */
 export interface EstimatedDocumentCountOptions extends CommandOperationOptions {

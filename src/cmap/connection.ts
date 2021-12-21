@@ -1,11 +1,11 @@
-import { MessageStream, OperationDescription } from './message_stream';
-import { StreamDescription, StreamDescriptionOptions } from './stream_description';
+import { MessageStream, OperationDescription } from './message_stream.ts';
+import { StreamDescription, StreamDescriptionOptions } from './stream_description.ts';
 import {
   CommandStartedEvent,
   CommandFailedEvent,
   CommandSucceededEvent
-} from './command_monitoring_events';
-import { applySession, ClientSession, updateSessionFromResponse } from '../sessions';
+} from './command_monitoring_events.ts';
+import { applySession, ClientSession, updateSessionFromResponse } from '../sessions.ts';
 import {
   uuidV4,
   ClientMetadata,
@@ -15,7 +15,7 @@ import {
   MongoDBNamespace,
   maxWireVersion,
   HostAddress
-} from '../utils';
+} from '../utils.ts';
 import {
   MongoRuntimeError,
   MongoMissingDependencyError,
@@ -24,7 +24,7 @@ import {
   MongoNetworkTimeoutError,
   MongoServerError,
   MongoWriteConcernError
-} from '../error';
+} from '../error.ts';
 import {
   BinMsg,
   WriteProtocolMessageType,
@@ -34,16 +34,16 @@ import {
   Query,
   OpQueryOptions,
   Msg
-} from './commands';
-import { BSONSerializeOptions, Document, Long, pluckBSONSerializeOptions, ObjectId } from '../bson';
-import type { AutoEncrypter } from '../deps';
-import type { MongoCredentials } from './auth/mongo_credentials';
-import type { Stream } from './connect';
-import { applyCommonQueryOptions, getReadPreference, isSharded } from './wire_protocol/shared';
-import { ReadPreference, ReadPreferenceLike } from '../read_preference';
-import type { W, WriteConcern, WriteConcernOptions } from '../write_concern';
-import type { ServerApi, SupportedNodeConnectionOptions } from '../mongo_client';
-import { CancellationToken, TypedEventEmitter } from '../mongo_types';
+} from './commands.ts';
+import { BSONSerializeOptions, Document, Long, pluckBSONSerializeOptions, ObjectId } from '../bson.ts';
+import type { AutoEncrypter } from '../deps.ts';
+import type { MongoCredentials } from './auth/mongo_credentials.ts';
+import type { Stream } from './connect.ts';
+import { applyCommonQueryOptions, getReadPreference, isSharded } from './wire_protocol/shared.ts';
+import { ReadPreference, ReadPreferenceLike } from '../read_preference.ts';
+import type { W, WriteConcern, WriteConcernOptions } from '../write_concern.ts';
+import type { ServerApi, SupportedNodeConnectionOptions } from '../mongo_client.ts';
+import { CancellationToken, TypedEventEmitter } from '../mongo_types.ts';
 
 /** @internal */
 const kStream = Symbol('stream');

@@ -1,13 +1,13 @@
-import { Db, DbOptions } from './db';
-import { ChangeStream, ChangeStreamOptions } from './change_stream';
-import type { ReadPreference, ReadPreferenceMode } from './read_preference';
+import { Db, DbOptions } from './db.ts';
+import { ChangeStream, ChangeStreamOptions } from './change_stream.ts';
+import type { ReadPreference, ReadPreferenceMode } from './read_preference.ts';
 import {
   AnyError,
   MongoRuntimeError,
   MongoInvalidArgumentError,
   MongoNotConnectedError
-} from './error';
-import type { W, WriteConcern } from './write_concern';
+} from './error.ts';
+import type { W, WriteConcern } from './write_concern.ts';
 import {
   maybePromise,
   MongoDBNamespace,
@@ -16,27 +16,27 @@ import {
   ClientMetadata,
   ns,
   HostAddress
-} from './utils';
-import { connect, MONGO_CLIENT_EVENTS } from './operations/connect';
-import { PromiseProvider } from './promise_provider';
-import type { Logger, LoggerLevel } from './logger';
-import type { ReadConcern, ReadConcernLevel, ReadConcernLike } from './read_concern';
-import { BSONSerializeOptions, Document, resolveBSONOptions } from './bson';
-import type { AutoEncrypter, AutoEncryptionOptions } from './deps';
-import type { AuthMechanism } from './cmap/auth/defaultAuthProviders';
-import type { Topology, TopologyEvents } from './sdam/topology';
-import type { ClientSession, ClientSessionOptions } from './sessions';
-import type { TagSet } from './sdam/server_description';
-import type { AuthMechanismProperties, MongoCredentials } from './cmap/auth/mongo_credentials';
-import { parseOptions } from './connection_string';
-import type { CompressorName } from './cmap/wire_protocol/compression';
+} from './utils.ts';
+import { connect, MONGO_CLIENT_EVENTS } from './operations/connect.ts';
+import { PromiseProvider } from './promise_provider.ts';
+import type { Logger, LoggerLevel } from './logger.ts';
+import type { ReadConcern, ReadConcernLevel, ReadConcernLike } from './read_concern.ts';
+import { BSONSerializeOptions, Document, resolveBSONOptions } from './bson.ts';
+import type { AutoEncrypter, AutoEncryptionOptions } from './deps.ts';
+import type { AuthMechanism } from './cmap/auth/defaultAuthProviders.ts';
+import type { Topology, TopologyEvents } from './sdam/topology.ts';
+import type { ClientSession, ClientSessionOptions } from './sessions.ts';
+import type { TagSet } from './sdam/server_description.ts';
+import type { AuthMechanismProperties, MongoCredentials } from './cmap/auth/mongo_credentials.ts';
+import { parseOptions } from './connection_string.ts';
+import type { CompressorName } from './cmap/wire_protocol/compression.ts';
 import type { TLSSocketOptions, ConnectionOptions as TLSConnectionOptions } from 'tls';
 import type { TcpNetConnectOpts } from 'net';
-import type { SrvPoller } from './sdam/srv_polling';
-import type { Connection } from './cmap/connection';
-import type { LEGAL_TLS_SOCKET_OPTIONS, LEGAL_TCP_SOCKET_OPTIONS } from './cmap/connect';
-import type { Encrypter } from './encrypter';
-import { TypedEventEmitter } from './mongo_types';
+import type { SrvPoller } from './sdam/srv_polling.ts';
+import type { Connection } from './cmap/connection.ts';
+import type { LEGAL_TLS_SOCKET_OPTIONS, LEGAL_TCP_SOCKET_OPTIONS } from './cmap/connect.ts';
+import type { Encrypter } from './encrypter.ts';
+import { TypedEventEmitter } from './mongo_types.ts';
 
 /** @public */
 export const ServerApiVersion = Object.freeze({

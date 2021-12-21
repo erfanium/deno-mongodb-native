@@ -1,12 +1,12 @@
-import { CommandOperation, CommandOperationOptions } from './command';
-import { Aspect, defineAspects } from './operation';
-import { Collection } from '../collection';
-import type { Callback } from '../utils';
-import type { Document } from '../bson';
-import type { Server } from '../sdam/server';
-import type { Db } from '../db';
-import type { PkFactory } from '../mongo_client';
-import type { ClientSession } from '../sessions';
+import { CommandOperation, CommandOperationOptions } from './command.ts';
+import { Aspect, defineAspects } from './operation.ts';
+import { Collection } from '../collection.ts';
+import type { Callback } from '../utils.ts';
+import type { Document } from '../bson.ts';
+import type { Server } from '../sdam/server.ts';
+import type { Db } from '../db.ts';
+import type { PkFactory } from '../mongo_client.ts';
+import type { ClientSession } from '../sessions.ts';
 
 const ILLEGAL_COMMAND_FIELDS = new Set([
   'w',

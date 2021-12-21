@@ -1,6 +1,6 @@
 import { format } from 'util';
-import { enumToString } from './utils';
-import { MongoInvalidArgumentError } from './error';
+import { enumToString } from './utils.ts';
+import { MongoInvalidArgumentError } from './error.ts';
 
 // Filters for classes
 const classFilters: any = {};

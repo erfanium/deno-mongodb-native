@@ -5,53 +5,53 @@ import {
   MongoDBNamespace,
   getTopology,
   DEFAULT_PK_FACTORY
-} from './utils';
-import { AggregationCursor } from './cursor/aggregation_cursor';
-import { Document, BSONSerializeOptions, resolveBSONOptions } from './bson';
-import { ReadPreference, ReadPreferenceLike } from './read_preference';
-import { MongoAPIError, MongoInvalidArgumentError } from './error';
-import { Collection, CollectionOptions } from './collection';
-import { ChangeStream, ChangeStreamOptions } from './change_stream';
-import * as CONSTANTS from './constants';
-import { WriteConcern, WriteConcernOptions } from './write_concern';
-import { ReadConcern } from './read_concern';
-import { Logger, LoggerOptions } from './logger';
-import type { AggregateOptions } from './operations/aggregate';
-import { AddUserOperation, AddUserOptions } from './operations/add_user';
-import { CollectionsOperation } from './operations/collections';
-import { DbStatsOperation, DbStatsOptions } from './operations/stats';
-import { RunCommandOperation, RunCommandOptions } from './operations/run_command';
-import { CreateCollectionOperation, CreateCollectionOptions } from './operations/create_collection';
+} from './utils.ts';
+import { AggregationCursor } from './cursor/aggregation_cursor.ts';
+import { Document, BSONSerializeOptions, resolveBSONOptions } from './bson.ts';
+import { ReadPreference, ReadPreferenceLike } from './read_preference.ts';
+import { MongoAPIError, MongoInvalidArgumentError } from './error.ts';
+import { Collection, CollectionOptions } from './collection.ts';
+import { ChangeStream, ChangeStreamOptions } from './change_stream.ts';
+import * as CONSTANTS from './constants.ts';
+import { WriteConcern, WriteConcernOptions } from './write_concern.ts';
+import { ReadConcern } from './read_concern.ts';
+import { Logger, LoggerOptions } from './logger.ts';
+import type { AggregateOptions } from './operations/aggregate.ts';
+import { AddUserOperation, AddUserOptions } from './operations/add_user.ts';
+import { CollectionsOperation } from './operations/collections.ts';
+import { DbStatsOperation, DbStatsOptions } from './operations/stats.ts';
+import { RunCommandOperation, RunCommandOptions } from './operations/run_command.ts';
+import { CreateCollectionOperation, CreateCollectionOptions } from './operations/create_collection.ts';
 import {
   CreateIndexOperation,
   IndexInformationOperation,
   CreateIndexesOptions,
   IndexSpecification
-} from './operations/indexes';
+} from './operations/indexes.ts';
 import {
   DropCollectionOperation,
   DropDatabaseOperation,
   DropDatabaseOptions,
   DropCollectionOptions
-} from './operations/drop';
+} from './operations/drop.ts';
 import {
   CollectionInfo,
   ListCollectionsCursor,
   ListCollectionsOptions
-} from './operations/list_collections';
-import { ProfilingLevelOperation, ProfilingLevelOptions } from './operations/profiling_level';
-import { RemoveUserOperation, RemoveUserOptions } from './operations/remove_user';
-import { RenameOperation, RenameOptions } from './operations/rename';
+} from './operations/list_collections.ts';
+import { ProfilingLevelOperation, ProfilingLevelOptions } from './operations/profiling_level.ts';
+import { RemoveUserOperation, RemoveUserOptions } from './operations/remove_user.ts';
+import { RenameOperation, RenameOptions } from './operations/rename.ts';
 import {
   SetProfilingLevelOperation,
   SetProfilingLevelOptions,
   ProfilingLevel
-} from './operations/set_profiling_level';
-import { executeOperation } from './operations/execute_operation';
-import type { IndexInformationOptions } from './operations/common_functions';
-import type { MongoClient, PkFactory } from './mongo_client';
-import { Admin } from './admin';
-import type { TODO_NODE_3286 } from './mongo_types';
+} from './operations/set_profiling_level.ts';
+import { executeOperation } from './operations/execute_operation.ts';
+import type { IndexInformationOptions } from './operations/common_functions.ts';
+import type { MongoClient, PkFactory } from './mongo_client.ts';
+import { Admin } from './admin.ts';
+import type { TODO_NODE_3286 } from './mongo_types.ts';
 
 // Allowed parameters
 const DB_OPTIONS_ALLOW_LIST = [

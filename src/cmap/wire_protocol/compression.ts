@@ -1,9 +1,9 @@
 import * as zlib from 'zlib';
-import type { Callback } from '../../utils';
-import type { OperationDescription } from '../message_stream';
+import type { Callback } from '../../utils.ts';
+import type { OperationDescription } from '../message_stream.ts';
 
-import { PKG_VERSION, Snappy } from '../../deps';
-import { MongoDecompressionError, MongoInvalidArgumentError } from '../../error';
+import { PKG_VERSION, Snappy } from '../../deps.ts';
+import { MongoDecompressionError, MongoInvalidArgumentError } from '../../error.ts';
 
 /** @public */
 export const Compressor = Object.freeze({

@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
-import { AuthProvider, AuthContext } from './auth_provider';
-import { Callback, ns } from '../../utils';
-import { MongoMissingCredentialsError } from '../../error';
+import { AuthProvider, AuthContext } from './auth_provider.ts';
+import { Callback, ns } from '../../utils.ts';
+import { MongoMissingCredentialsError } from '../../error.ts';
 
 export class MongoCR extends AuthProvider {
   auth(authContext: AuthContext, callback: Callback): void {

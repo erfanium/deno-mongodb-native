@@ -1,7 +1,7 @@
-import type { ObjectId } from '../bson';
-import type { Connection } from './connection';
-import type { ConnectionPool, ConnectionPoolOptions } from './connection_pool';
-import type { AnyError } from '../error';
+import type { ObjectId } from '../bson.ts';
+import type { Connection } from './connection.ts';
+import type { ConnectionPool, ConnectionPoolOptions } from './connection_pool.ts';
+import type { AnyError } from '../error.ts';
 
 /**
  * The base export class for all monitoring events published from the connection pool

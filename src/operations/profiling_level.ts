@@ -1,9 +1,9 @@
-import { CommandOperation, CommandOperationOptions } from './command';
-import type { Callback } from '../utils';
-import type { Server } from '../sdam/server';
-import type { Db } from '../db';
-import type { ClientSession } from '../sessions';
-import { MongoRuntimeError } from '../error';
+import { CommandOperation, CommandOperationOptions } from './command.ts';
+import type { Callback } from '../utils.ts';
+import type { Server } from '../sdam/server.ts';
+import type { Db } from '../db.ts';
+import type { ClientSession } from '../sessions.ts';
+import { MongoRuntimeError } from '../error.ts';
 
 /** @public */
 export type ProfilingLevelOptions = CommandOperationOptions;

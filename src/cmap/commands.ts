@@ -1,11 +1,11 @@
-import { ReadPreference } from '../read_preference';
-import * as BSON from '../bson';
-import { databaseNamespace } from '../utils';
-import { OP_QUERY, OP_GETMORE, OP_KILL_CURSORS, OP_MSG } from './wire_protocol/constants';
-import type { Long, Document, BSONSerializeOptions } from '../bson';
-import type { ClientSession } from '../sessions';
-import type { CommandOptions } from './connection';
-import { MongoRuntimeError, MongoInvalidArgumentError } from '../error';
+import { ReadPreference } from '../read_preference.ts';
+import * as BSON from '../bson.ts';
+import { databaseNamespace } from '../utils.ts';
+import { OP_QUERY, OP_GETMORE, OP_KILL_CURSORS, OP_MSG } from './wire_protocol/constants.ts';
+import type { Long, Document, BSONSerializeOptions } from '../bson.ts';
+import type { ClientSession } from '../sessions.ts';
+import type { CommandOptions } from './connection.ts';
+import { MongoRuntimeError, MongoInvalidArgumentError } from '../error.ts';
 
 // Incrementing request id
 let _requestId = 0;

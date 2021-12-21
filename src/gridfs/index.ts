@@ -1,22 +1,22 @@
-import { MongoRuntimeError } from '../error';
+import { MongoRuntimeError } from '../error.ts';
 import {
   GridFSBucketReadStream,
   GridFSBucketReadStreamOptions,
   GridFSBucketReadStreamOptionsWithRevision,
   GridFSFile
-} from './download';
-import { GridFSBucketWriteStream, GridFSBucketWriteStreamOptions, GridFSChunk } from './upload';
-import { executeLegacyOperation, Callback, getTopology } from '../utils';
-import { WriteConcernOptions, WriteConcern } from '../write_concern';
-import type { ObjectId } from '../bson';
-import type { Db } from '../db';
-import type { ReadPreference } from '../read_preference';
-import type { Collection } from '../collection';
-import type { FindOptions } from './../operations/find';
-import type { Sort } from '../sort';
-import type { Logger } from '../logger';
-import type { FindCursor } from '../cursor/find_cursor';
-import { Filter, TypedEventEmitter } from '../mongo_types';
+} from './download.ts';
+import { GridFSBucketWriteStream, GridFSBucketWriteStreamOptions, GridFSChunk } from './upload.ts';
+import { executeLegacyOperation, Callback, getTopology } from '../utils.ts';
+import { WriteConcernOptions, WriteConcern } from '../write_concern.ts';
+import type { ObjectId } from '../bson.ts';
+import type { Db } from '../db.ts';
+import type { ReadPreference } from '../read_preference.ts';
+import type { Collection } from '../collection.ts';
+import type { FindOptions } from './../operations/find.ts';
+import type { Sort } from '../sort.ts';
+import type { Logger } from '../logger.ts';
+import type { FindCursor } from '../cursor/find_cursor.ts';
+import { Filter, TypedEventEmitter } from '../mongo_types.ts';
 
 const DEFAULT_GRIDFS_BUCKET_OPTIONS: {
   bucketName: string;

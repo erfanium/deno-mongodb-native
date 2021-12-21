@@ -1,19 +1,19 @@
 import * as http from 'http';
 import * as crypto from 'crypto';
 import * as url from 'url';
-import * as BSON from '../../bson';
-import { AuthProvider, AuthContext } from './auth_provider';
-import { MongoCredentials } from './mongo_credentials';
+import * as BSON from '../../bson.ts';
+import { AuthProvider, AuthContext } from './auth_provider.ts';
+import { MongoCredentials } from './mongo_credentials.ts';
 import {
   MongoRuntimeError,
   MongoMissingCredentialsError,
   MongoCompatibilityError
-} from '../../error';
-import { maxWireVersion, Callback, ns } from '../../utils';
-import type { BSONSerializeOptions } from '../../bson';
+} from '../../error.ts';
+import { maxWireVersion, Callback, ns } from '../../utils.ts';
+import type { BSONSerializeOptions } from '../../bson.ts';
 
-import { aws4 } from '../../deps';
-import { AuthMechanism } from './defaultAuthProviders';
+import { aws4 } from '../../deps.ts';
+import { AuthMechanism } from './defaultAuthProviders.ts';
 import type { Binary } from 'bson';
 
 const ASCII_N = 110;

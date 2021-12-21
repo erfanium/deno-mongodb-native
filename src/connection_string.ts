@@ -2,11 +2,11 @@ import * as dns from 'dns';
 import * as fs from 'fs';
 import ConnectionString from 'mongodb-connection-string-url';
 import { URLSearchParams } from 'url';
-import { AuthMechanism } from './cmap/auth/defaultAuthProviders';
-import { ReadPreference, ReadPreferenceMode } from './read_preference';
-import { ReadConcern, ReadConcernLevel } from './read_concern';
-import { W, WriteConcern } from './write_concern';
-import { MongoAPIError, MongoInvalidArgumentError, MongoParseError } from './error';
+import { AuthMechanism } from './cmap/auth/defaultAuthProviders.ts';
+import { ReadPreference, ReadPreferenceMode } from './read_preference.ts';
+import { ReadConcern, ReadConcernLevel } from './read_concern.ts';
+import { W, WriteConcern } from './write_concern.ts';
+import { MongoAPIError, MongoInvalidArgumentError, MongoParseError } from './error.ts';
 import {
   AnyOptions,
   Callback,
@@ -16,8 +16,8 @@ import {
   setDifference,
   HostAddress,
   emitWarning
-} from './utils';
-import type { Document } from './bson';
+} from './utils.ts';
+import type { Document } from './bson.ts';
 import {
   DriverInfo,
   MongoClient,
@@ -26,13 +26,13 @@ import {
   PkFactory,
   ServerApi,
   ServerApiVersion
-} from './mongo_client';
-import { MongoCredentials } from './cmap/auth/mongo_credentials';
-import type { TagSet } from './sdam/server_description';
-import { Logger, LoggerLevel } from './logger';
-import { PromiseProvider } from './promise_provider';
-import { Encrypter } from './encrypter';
-import { Compressor, CompressorName } from './cmap/wire_protocol/compression';
+} from './mongo_client.ts';
+import { MongoCredentials } from './cmap/auth/mongo_credentials.ts';
+import type { TagSet } from './sdam/server_description.ts';
+import { Logger, LoggerLevel } from './logger.ts';
+import { PromiseProvider } from './promise_provider.ts';
+import { Encrypter } from './encrypter.ts';
+import { Compressor, CompressorName } from './cmap/wire_protocol/compression.ts';
 
 const VALID_TXT_RECORDS = ['authSource', 'replicaSet', 'loadBalanced'];
 

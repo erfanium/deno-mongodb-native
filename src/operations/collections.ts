@@ -1,9 +1,9 @@
-import { AbstractOperation, OperationOptions } from './operation';
-import { Collection } from '../collection';
-import type { Callback } from '../utils';
-import type { Db } from '../db';
-import type { Server } from '../sdam/server';
-import type { ClientSession } from '../sessions';
+import { AbstractOperation, OperationOptions } from './operation.ts';
+import { Collection } from '../collection.ts';
+import type { Callback } from '../utils.ts';
+import type { Db } from '../db.ts';
+import type { Server } from '../sdam/server.ts';
+import type { ClientSession } from '../sessions.ts';
 
 export interface CollectionsOptions extends OperationOptions {
   nameOnly?: boolean;

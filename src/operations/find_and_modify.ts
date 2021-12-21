@@ -1,14 +1,14 @@
-import { ReadPreference } from '../read_preference';
-import { maxWireVersion, decorateWithCollation, hasAtomicOperators, Callback } from '../utils';
-import { MongoInvalidArgumentError, MongoCompatibilityError } from '../error';
-import { CommandOperation, CommandOperationOptions } from './command';
-import { defineAspects, Aspect } from './operation';
-import type { Document } from '../bson';
-import type { Server } from '../sdam/server';
-import type { Collection } from '../collection';
-import { Sort, SortForCmd, formatSort } from '../sort';
-import type { ClientSession } from '../sessions';
-import type { WriteConcern, WriteConcernSettings } from '../write_concern';
+import { ReadPreference } from '../read_preference.ts';
+import { maxWireVersion, decorateWithCollation, hasAtomicOperators, Callback } from '../utils.ts';
+import { MongoInvalidArgumentError, MongoCompatibilityError } from '../error.ts';
+import { CommandOperation, CommandOperationOptions } from './command.ts';
+import { defineAspects, Aspect } from './operation.ts';
+import type { Document } from '../bson.ts';
+import type { Server } from '../sdam/server.ts';
+import type { Collection } from '../collection.ts';
+import { Sort, SortForCmd, formatSort } from '../sort.ts';
+import type { ClientSession } from '../sessions.ts';
+import type { WriteConcern, WriteConcernSettings } from '../write_concern.ts';
 
 /** @public */
 export const ReturnDocument = Object.freeze({

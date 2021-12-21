@@ -1,13 +1,13 @@
-import { Logger } from '../logger';
+import { Logger } from '../logger.ts';
 import {
   ConnectionPool,
   ConnectionPoolOptions,
   CMAP_EVENTS,
   ConnectionPoolEvents
-} from '../cmap/connection_pool';
-import { ServerDescription, compareTopologyVersion } from './server_description';
-import { Monitor, MonitorOptions } from './monitor';
-import { isTransactionCommand } from '../transactions';
+} from '../cmap/connection_pool.ts';
+import { ServerDescription, compareTopologyVersion } from './server_description.ts';
+import { Monitor, MonitorOptions } from './monitor.ts';
+import { isTransactionCommand } from '../transactions.ts';
 import {
   collationNotSupported,
   makeStateMachine,
@@ -16,7 +16,7 @@ import {
   CallbackWithType,
   MongoDBNamespace,
   EventEmitterWithState
-} from '../utils';
+} from '../utils.ts';
 import {
   STATE_CLOSED,
   STATE_CLOSING,
@@ -24,7 +24,7 @@ import {
   STATE_CONNECTED,
   ClusterTime,
   TopologyType
-} from './common';
+} from './common.ts';
 import {
   MongoError,
   MongoNetworkError,
@@ -36,7 +36,7 @@ import {
   MongoCompatibilityError,
   MongoInvalidArgumentError,
   MongoServerClosedError
-} from '../error';
+} from '../error.ts';
 import {
   Connection,
   DestroyOptions,
@@ -44,19 +44,19 @@ import {
   GetMoreOptions,
   CommandOptions,
   APM_EVENTS
-} from '../cmap/connection';
-import type { Topology } from './topology';
+} from '../cmap/connection.ts';
+import type { Topology } from './topology.ts';
 import type {
   ServerHeartbeatFailedEvent,
   ServerHeartbeatStartedEvent,
   ServerHeartbeatSucceededEvent
-} from './events';
-import type { ClientSession } from '../sessions';
-import type { Document, Long } from '../bson';
-import type { AutoEncrypter } from '../deps';
-import type { ServerApi } from '../mongo_client';
-import { TypedEventEmitter } from '../mongo_types';
-import { supportsRetryableWrites } from '../utils';
+} from './events.ts';
+import type { ClientSession } from '../sessions.ts';
+import type { Document, Long } from '../bson.ts';
+import type { AutoEncrypter } from '../deps.ts';
+import type { ServerApi } from '../mongo_client.ts';
+import { TypedEventEmitter } from '../mongo_types.ts';
+import { supportsRetryableWrites } from '../utils.ts';
 
 const stateTransition = makeStateMachine({
   [STATE_CLOSED]: [STATE_CLOSED, STATE_CONNECTING],

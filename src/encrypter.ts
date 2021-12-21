@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import { MongoClient, MongoClientOptions } from './mongo_client';
-import type { AutoEncrypter, AutoEncryptionOptions } from './deps';
-import { MongoInvalidArgumentError, MongoMissingDependencyError } from './error';
-import { deserialize, serialize } from './bson';
-import type { Callback } from './utils';
-import { MONGO_CLIENT_EVENTS } from './operations/connect';
+import { MongoClient, MongoClientOptions } from './mongo_client.ts';
+import type { AutoEncrypter, AutoEncryptionOptions } from './deps.ts';
+import { MongoInvalidArgumentError, MongoMissingDependencyError } from './error.ts';
+import { deserialize, serialize } from './bson.ts';
+import type { Callback } from './utils.ts';
+import { MONGO_CLIENT_EVENTS } from './operations/connect.ts';
 
 let AutoEncrypterClass: AutoEncrypter;
 

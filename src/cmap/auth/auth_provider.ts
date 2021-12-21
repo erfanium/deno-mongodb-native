@@ -1,9 +1,9 @@
-import type { Document } from '../../bson';
-import type { Connection, ConnectionOptions } from '../connection';
-import type { MongoCredentials } from './mongo_credentials';
-import type { HandshakeDocument } from '../connect';
-import type { ClientMetadataOptions, Callback } from '../../utils';
-import { MongoRuntimeError } from '../../error';
+import type { Document } from '../../bson.ts';
+import type { Connection, ConnectionOptions } from '../connection.ts';
+import type { MongoCredentials } from './mongo_credentials.ts';
+import type { HandshakeDocument } from '../connect.ts';
+import type { ClientMetadataOptions, Callback } from '../../utils.ts';
+import { MongoRuntimeError } from '../../error.ts';
 
 export type AuthContextOptions = ConnectionOptions & ClientMetadataOptions;
 

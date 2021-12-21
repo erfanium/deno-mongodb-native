@@ -1,4 +1,4 @@
-import { MongoInvalidArgumentError } from './error';
+import { MongoInvalidArgumentError } from './error.ts';
 
 /** @internal */
 const kPromise = Symbol('promise');

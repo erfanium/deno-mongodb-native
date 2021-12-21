@@ -1,20 +1,20 @@
-import { AddUserOperation, AddUserOptions } from './operations/add_user';
-import { RemoveUserOperation, RemoveUserOptions } from './operations/remove_user';
+import { AddUserOperation, AddUserOptions } from './operations/add_user.ts';
+import { RemoveUserOperation, RemoveUserOptions } from './operations/remove_user.ts';
 import {
   ValidateCollectionOperation,
   ValidateCollectionOptions
-} from './operations/validate_collection';
+} from './operations/validate_collection.ts';
 import {
   ListDatabasesOperation,
   ListDatabasesOptions,
   ListDatabasesResult
-} from './operations/list_databases';
-import { executeOperation } from './operations/execute_operation';
-import { RunCommandOperation, RunCommandOptions } from './operations/run_command';
-import { Callback, getTopology } from './utils';
-import type { Document } from './bson';
-import type { CommandOperationOptions } from './operations/command';
-import type { Db } from './db';
+} from './operations/list_databases.ts';
+import { executeOperation } from './operations/execute_operation.ts';
+import { RunCommandOperation, RunCommandOptions } from './operations/run_command.ts';
+import { Callback, getTopology } from './utils.ts';
+import type { Document } from './bson.ts';
+import type { CommandOperationOptions } from './operations/command.ts';
+import type { Db } from './db.ts';
 
 /** @internal */
 export interface AdminPrivate {

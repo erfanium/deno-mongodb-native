@@ -1,13 +1,13 @@
 import { Writable } from 'stream';
-import type { Document } from '../bson';
-import { ObjectId } from '../bson';
-import type { Collection } from '../collection';
-import { AnyError, MONGODB_ERROR_CODES, MongoError, MongoAPIError } from '../error';
-import { Callback, maybePromise } from '../utils';
-import type { WriteConcernOptions } from '../write_concern';
-import { WriteConcern } from './../write_concern';
-import type { GridFSFile } from './download';
-import type { GridFSBucket } from './index';
+import type { Document } from '../bson.ts';
+import { ObjectId } from '../bson.ts';
+import type { Collection } from '../collection.ts';
+import { AnyError, MONGODB_ERROR_CODES, MongoError, MongoAPIError } from '../error.ts';
+import { Callback, maybePromise } from '../utils.ts';
+import type { WriteConcernOptions } from '../write_concern.ts';
+import { WriteConcern } from './../write_concern.ts';
+import type { GridFSFile } from './download.ts';
+import type { GridFSBucket } from './index.ts';
 
 /** @public */
 export interface GridFSChunk {

@@ -1,50 +1,54 @@
-import { ServerType, STATE_CLOSED, STATE_CLOSING } from './common';
+import { ServerType, STATE_CLOSED, STATE_CLOSING } from "./common.ts";
 import {
-  now,
-  makeStateMachine,
   calculateDurationInMs,
+  EventEmitterWithState,
   makeInterruptibleAsyncInterval,
+  makeStateMachine,
+  now,
   ns,
-  EventEmitterWithState
-} from '../utils';
-import { connect } from '../cmap/connect';
-import { Connection, ConnectionOptions } from '../cmap/connection';
-import { MongoNetworkError, AnyError } from '../error';
-import { Long, Document } from '../bson';
+} from "../utils.ts";
+import { connect } from "../cmap/connect.ts";
+import { Connection, ConnectionOptions } from "../cmap/connection.ts";
+import { AnyError, MongoNetworkError } from "../error.ts";
+import { Document, Long } from "../bson.ts";
 import {
+  ServerHeartbeatFailedEvent,
   ServerHeartbeatStartedEvent,
   ServerHeartbeatSucceededEvent,
-  ServerHeartbeatFailedEvent
-} from './events';
+} from "./events.ts";
 
-import { Server } from './server';
-import type { InterruptibleAsyncInterval, Callback } from '../utils';
-import type { TopologyVersion } from './server_description';
-import { CancellationToken, TypedEventEmitter } from '../mongo_types';
+import { Server } from "./server.ts";
+import type { Callback, InterruptibleAsyncInterval } from "../utils.ts";
+import type { TopologyVersion } from "./server_description.ts";
+import { CancellationToken, TypedEventEmitter } from "../mongo_types.ts";
 
 /** @internal */
-const kServer = Symbol('server');
+const kServer = Symbol("server");
 /** @internal */
-const kMonitorId = Symbol('monitorId');
+const kMonitorId = Symbol("monitorId");
 /** @internal */
-const kConnection = Symbol('connection');
+const kConnection = Symbol("connection");
 /** @internal */
-const kCancellationToken = Symbol('cancellationToken');
+const kCancellationToken = Symbol("cancellationToken");
 /** @internal */
-const kRTTPinger = Symbol('rttPinger');
+const kRTTPinger = Symbol("rttPinger");
 /** @internal */
-const kRoundTripTime = Symbol('roundTripTime');
+const kRoundTripTime = Symbol("roundTripTime");
 
-const STATE_IDLE = 'idle';
-const STATE_MONITORING = 'monitoring';
+const STATE_IDLE = "idle";
+const STATE_MONITORING = "monitoring";
 const stateTransition = makeStateMachine({
   [STATE_CLOSING]: [STATE_CLOSING, STATE_IDLE, STATE_CLOSED],
   [STATE_CLOSED]: [STATE_CLOSED, STATE_MONITORING],
   [STATE_IDLE]: [STATE_IDLE, STATE_MONITORING, STATE_CLOSING],
-  [STATE_MONITORING]: [STATE_MONITORING, STATE_IDLE, STATE_CLOSING]
+  [STATE_MONITORING]: [STATE_MONITORING, STATE_IDLE, STATE_CLOSING],
 });
 
-const INVALID_REQUEST_CHECK_STATES = new Set([STATE_CLOSING, STATE_CLOSED, STATE_MONITORING]);
+const INVALID_REQUEST_CHECK_STATES = new Set([
+  STATE_CLOSING,
+  STATE_CLOSED,
+  STATE_MONITORING,
+]);
 function isInCloseState(monitor: Monitor) {
   return monitor.s.state === STATE_CLOSED || monitor.s.state === STATE_CLOSING;
 }
@@ -56,7 +60,7 @@ export interface MonitorPrivate {
 
 /** @public */
 export interface MonitorOptions
-  extends Omit<ConnectionOptions, 'id' | 'generation' | 'hostAddress'> {
+  extends Omit<ConnectionOptions, "id" | "generation" | "hostAddress"> {
   connectTimeoutMS: number;
   heartbeatFrequencyMS: number;
   minHeartbeatFrequencyMS: number;
@@ -78,7 +82,10 @@ export class Monitor extends TypedEventEmitter<MonitorEvents> {
   s: MonitorPrivate;
   address: string;
   options: Readonly<
-    Pick<MonitorOptions, 'connectTimeoutMS' | 'heartbeatFrequencyMS' | 'minHeartbeatFrequencyMS'>
+    Pick<
+      MonitorOptions,
+      "connectTimeoutMS" | "heartbeatFrequencyMS" | "minHeartbeatFrequencyMS"
+    >
   >;
   connectOptions: ConnectionOptions;
   [kServer]: Server;
@@ -97,25 +104,25 @@ export class Monitor extends TypedEventEmitter<MonitorEvents> {
     this[kCancellationToken].setMaxListeners(Infinity);
     this[kMonitorId] = undefined;
     this.s = {
-      state: STATE_CLOSED
+      state: STATE_CLOSED,
     };
 
     this.address = server.description.address;
     this.options = Object.freeze({
       connectTimeoutMS: options.connectTimeoutMS ?? 10000,
       heartbeatFrequencyMS: options.heartbeatFrequencyMS ?? 10000,
-      minHeartbeatFrequencyMS: options.minHeartbeatFrequencyMS ?? 500
+      minHeartbeatFrequencyMS: options.minHeartbeatFrequencyMS ?? 500,
     });
 
     const cancellationToken = this[kCancellationToken];
     // TODO: refactor this to pull it directly from the pool, requires new ConnectionPool integration
     const connectOptions = Object.assign(
       {
-        id: '<monitor>' as const,
+        id: "<monitor>" as const,
         generation: server.s.pool.generation,
         connectionType: Connection,
         cancellationToken,
-        hostAddress: server.description.hostAddress
+        hostAddress: server.description.hostAddress,
       },
       options,
       // force BSON serialization options
@@ -123,8 +130,8 @@ export class Monitor extends TypedEventEmitter<MonitorEvents> {
         raw: false,
         promoteLongs: true,
         promoteValues: true,
-        promoteBuffers: true
-      }
+        promoteBuffers: true,
+      },
     );
 
     // ensure no authentication is used for monitoring
@@ -147,7 +154,7 @@ export class Monitor extends TypedEventEmitter<MonitorEvents> {
     this[kMonitorId] = makeInterruptibleAsyncInterval(monitorServer(this), {
       interval: heartbeatFrequencyMS,
       minInterval: minHeartbeatFrequencyMS,
-      immediate: true
+      immediate: true,
     });
   }
 
@@ -176,7 +183,7 @@ export class Monitor extends TypedEventEmitter<MonitorEvents> {
     const minHeartbeatFrequencyMS = this.options.minHeartbeatFrequencyMS;
     this[kMonitorId] = makeInterruptibleAsyncInterval(monitorServer(this), {
       interval: heartbeatFrequencyMS,
-      minInterval: minHeartbeatFrequencyMS
+      minInterval: minHeartbeatFrequencyMS,
     });
   }
 
@@ -189,7 +196,7 @@ export class Monitor extends TypedEventEmitter<MonitorEvents> {
     resetMonitorState(this);
 
     // close monitor
-    this.emit('close');
+    this.emit("close");
     stateTransition(this, STATE_CLOSED);
   }
 }
@@ -201,7 +208,7 @@ function resetMonitorState(monitor: Monitor) {
   monitor[kRTTPinger]?.close();
   monitor[kRTTPinger] = undefined;
 
-  monitor[kCancellationToken].emit('cancel');
+  monitor[kCancellationToken].emit("cancel");
 
   monitor[kConnection]?.destroy({ force: true });
   monitor[kConnection] = undefined;
@@ -209,7 +216,10 @@ function resetMonitorState(monitor: Monitor) {
 
 function checkServer(monitor: Monitor, callback: Callback<Document>) {
   let start = now();
-  monitor.emit(Server.SERVER_HEARTBEAT_STARTED, new ServerHeartbeatStartedEvent(monitor.address));
+  monitor.emit(
+    Server.SERVER_HEARTBEAT_STARTED,
+    new ServerHeartbeatStartedEvent(monitor.address),
+  );
 
   function failureHandler(err: AnyError) {
     monitor[kConnection]?.destroy({ force: true });
@@ -217,11 +227,15 @@ function checkServer(monitor: Monitor, callback: Callback<Document>) {
 
     monitor.emit(
       Server.SERVER_HEARTBEAT_FAILED,
-      new ServerHeartbeatFailedEvent(monitor.address, calculateDurationInMs(start), err)
+      new ServerHeartbeatFailedEvent(
+        monitor.address,
+        calculateDurationInMs(start),
+        err,
+      ),
     );
 
-    monitor.emit('resetServer', err);
-    monitor.emit('resetConnectionPool');
+    monitor.emit("resetServer", err);
+    monitor.emit("resetConnectionPool");
     callback(err);
   }
 
@@ -234,17 +248,22 @@ function checkServer(monitor: Monitor, callback: Callback<Document>) {
     const isAwaitable = topologyVersion != null;
 
     const cmd = {
-      [serverApi?.version || helloOk ? 'hello' : 'ismaster']: true,
+      [serverApi?.version || helloOk ? "hello" : "ismaster"]: true,
       ...(isAwaitable && topologyVersion
-        ? { maxAwaitTimeMS, topologyVersion: makeTopologyVersion(topologyVersion) }
-        : {})
+        ? {
+          maxAwaitTimeMS,
+          topologyVersion: makeTopologyVersion(topologyVersion),
+        }
+        : {}),
     };
 
     const options = isAwaitable
       ? {
-          socketTimeoutMS: connectTimeoutMS ? connectTimeoutMS + maxAwaitTimeMS : 0,
-          exhaustAllowed: true
-        }
+        socketTimeoutMS: connectTimeoutMS
+          ? connectTimeoutMS + maxAwaitTimeMS
+          : 0,
+        exhaustAllowed: true,
+      }
       : { socketTimeoutMS: connectTimeoutMS };
 
     if (isAwaitable && monitor[kRTTPinger] == null) {
@@ -252,28 +271,29 @@ function checkServer(monitor: Monitor, callback: Callback<Document>) {
         monitor[kCancellationToken],
         Object.assign(
           { heartbeatFrequencyMS: monitor.options.heartbeatFrequencyMS },
-          monitor.connectOptions
-        )
+          monitor.connectOptions,
+        ),
       );
     }
 
-    connection.command(ns('admin.$cmd'), cmd, options, (err, isMaster) => {
+    connection.command(ns("admin.$cmd"), cmd, options, (err, isMaster) => {
       if (err) {
         failureHandler(err);
         return;
       }
-      if ('isWritablePrimary' in isMaster) {
+      if ("isWritablePrimary" in isMaster) {
         // Provide pre-hello-style response document.
         isMaster.ismaster = isMaster.isWritablePrimary;
       }
 
       const rttPinger = monitor[kRTTPinger];
-      const duration =
-        isAwaitable && rttPinger ? rttPinger.roundTripTime : calculateDurationInMs(start);
+      const duration = isAwaitable && rttPinger
+        ? rttPinger.roundTripTime
+        : calculateDurationInMs(start);
 
       monitor.emit(
         Server.SERVER_HEARTBEAT_SUCCEEDED,
-        new ServerHeartbeatSucceededEvent(monitor.address, duration, isMaster)
+        new ServerHeartbeatSucceededEvent(monitor.address, duration, isMaster),
       );
 
       // if we are using the streaming protocol then we immediately issue another `started`
@@ -281,7 +301,7 @@ function checkServer(monitor: Monitor, callback: Callback<Document>) {
       if (isAwaitable && isMaster.topologyVersion) {
         monitor.emit(
           Server.SERVER_HEARTBEAT_STARTED,
-          new ServerHeartbeatStartedEvent(monitor.address)
+          new ServerHeartbeatStartedEvent(monitor.address),
         );
         start = now();
       } else {
@@ -302,7 +322,7 @@ function checkServer(monitor: Monitor, callback: Callback<Document>) {
 
       // we already reset the connection pool on network errors in all cases
       if (!(err instanceof MongoNetworkError)) {
-        monitor.emit('resetConnectionPool');
+        monitor.emit("resetConnectionPool");
       }
 
       failureHandler(err);
@@ -321,8 +341,8 @@ function checkServer(monitor: Monitor, callback: Callback<Document>) {
         new ServerHeartbeatSucceededEvent(
           monitor.address,
           calculateDurationInMs(start),
-          conn.ismaster
-        )
+          conn.ismaster,
+        ),
       );
 
       callback(undefined, conn.ismaster);
@@ -345,7 +365,7 @@ function monitorServer(monitor: Monitor) {
       if (err) {
         // otherwise an error occurred on initial discovery, also bail
         if (monitor[kServer].description.type === ServerType.Unknown) {
-          monitor.emit('resetServer', err);
+          monitor.emit("resetServer", err);
           return done();
         }
       }
@@ -368,7 +388,7 @@ function makeTopologyVersion(tv: TopologyVersion) {
   return {
     processId: tv.processId,
     // tests mock counter as just number, but in a real situation counter should always be a Long
-    counter: Long.isLong(tv.counter) ? tv.counter : Long.fromNumber(tv.counter)
+    counter: Long.isLong(tv.counter) ? tv.counter : Long.fromNumber(tv.counter),
   };
 }
 
@@ -386,7 +406,7 @@ export class RTTPinger {
   /** @internal */
   [kRoundTripTime]: number;
   /** @internal */
-  [kMonitorId]: NodeJS.Timeout;
+  [kMonitorId]: number;
   closed: boolean;
 
   constructor(cancellationToken: CancellationToken, options: RTTPingerOptions) {
@@ -396,7 +416,10 @@ export class RTTPinger {
     this.closed = false;
 
     const heartbeatFrequencyMS = options.heartbeatFrequencyMS;
-    this[kMonitorId] = setTimeout(() => measureRoundTripTime(this, options), heartbeatFrequencyMS);
+    this[kMonitorId] = setTimeout(
+      () => measureRoundTripTime(this, options),
+      heartbeatFrequencyMS,
+    );
   }
 
   get roundTripTime(): number {
@@ -434,7 +457,7 @@ function measureRoundTripTime(rttPinger: RTTPinger, options: RTTPingerOptions) {
     rttPinger[kRoundTripTime] = calculateDurationInMs(start);
     rttPinger[kMonitorId] = setTimeout(
       () => measureRoundTripTime(rttPinger, options),
-      heartbeatFrequencyMS
+      heartbeatFrequencyMS,
     );
   }
 
@@ -453,7 +476,7 @@ function measureRoundTripTime(rttPinger: RTTPinger, options: RTTPingerOptions) {
     return;
   }
 
-  connection.command(ns('admin.$cmd'), { ismaster: 1 }, undefined, err => {
+  connection.command(ns("admin.$cmd"), { ismaster: 1 }, undefined, (err) => {
     if (err) {
       rttPinger[kConnection] = undefined;
       rttPinger[kRoundTripTime] = 0;
